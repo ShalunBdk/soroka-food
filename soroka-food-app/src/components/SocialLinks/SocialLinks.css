@@ -1,0 +1,29 @@
+.social-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.social-link {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.8rem;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  text-decoration: none;
+  color: #555;
+  transition: all 0.3s;
+}
+
+.social-link:hover {
+  background: #8b4513;
+  color: white;
+  border-color: #8b4513;
+}
+
+.social-icon {
+  font-size: 1.2rem;
+  width: 24px;
+  text-align: center;
+}

@@ -1,0 +1,135 @@
+.main-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 3%;
+  display: grid;
+  grid-template-columns: 250px 1fr 300px;
+  gap: 2rem;
+}
+
+.content {
+  background: white;
+  padding: 2rem;
+  border: 1px solid #ddd;
+}
+
+.page-title {
+  font-size: 2rem;
+  color: #333;
+  margin: 0 0 1rem 0;
+  font-weight: 700;
+}
+
+.page-description {
+  color: #666;
+  margin: 0 0 2rem 0;
+  line-height: 1.8;
+}
+
+.category-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #ddd;
+  flex-wrap: wrap;
+}
+
+.category-tab {
+  padding: 0.7rem 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #555;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s;
+}
+
+.category-tab:hover {
+  color: #8b4513;
+}
+
+.category-tab.active {
+  color: #8b4513;
+  border-bottom-color: #8b4513;
+}
+
+.recipes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.right-sidebar {
+  background: white;
+  padding: 1.5rem;
+  border: 1px solid #ddd;
+  height: fit-content;
+}
+
+.right-sidebar-section {
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #eee;
+}
+
+.right-sidebar-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.right-sidebar-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 1rem 0;
+}
+
+.stats-box {
+  background: #f9f9f9;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.stats-item {
+  margin-bottom: 1rem;
+}
+
+.stats-item:last-child {
+  margin-bottom: 0;
+}
+
+.stats-number {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #8b4513;
+  display: block;
+}
+
+.stats-label {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+@media (max-width: 968px) {
+  .main-container {
+    grid-template-columns: 1fr;
+  }
+
+  .right-sidebar {
+    display: none;
+  }
+
+  .recipes-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .recipes-grid {
+    grid-template-columns: 1fr;
+  }
+}

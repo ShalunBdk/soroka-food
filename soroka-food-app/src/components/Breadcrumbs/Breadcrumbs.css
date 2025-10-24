@@ -1,0 +1,17 @@
+.breadcrumbs {
+  max-width: 1600px;
+  margin: 1.5rem auto;
+  padding: 0 3%;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.breadcrumbs a {
+  color: #8b4513;
+  text-decoration: none;
+  transition: text-decoration 0.3s;
+}
+
+.breadcrumbs a:hover {
+  text-decoration: underline;
+}
