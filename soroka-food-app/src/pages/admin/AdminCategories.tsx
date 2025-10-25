@@ -1,49 +1,77 @@
-import { useState } from 'react';
-import { recipes } from '../../data/recipes';
+import { useState, useEffect } from 'react';
+import api from '../../services/api';
 import type { ExtendedCategory } from '../../types';
 import './AdminCommon.css';
 
 function AdminCategories() {
-  const allCategories = Array.from(new Set(recipes.flatMap(recipe => recipe.category)));
-
-  const [categories, setCategories] = useState<ExtendedCategory[]>(
-    allCategories.map((cat, index) => ({
-      id: index + 1,
-      name: cat,
-      slug: cat.toLowerCase().replace(/\s+/g, '-'),
-      recipeCount: recipes.filter(r => r.category.includes(cat)).length,
-      description: ''
-    }))
-  );
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [isAdding, setIsAdding] = useState(false);
-  const [newCategory, setNewCategory] = useState({ name: '', description: '' });
+  const [newCategory, setNewCategory] = useState({ name: '', slug: '', description: '' });
 
-  const handleAdd = () => {
-    if (newCategory.name.trim()) {
-      const category: ExtendedCategory = {
-        id: categories.length + 1,
-        name: newCategory.name,
-        slug: newCategory.name.toLowerCase().replace(/\s+/g, '-'),
-        description: newCategory.description,
-        recipeCount: 0
-      };
-      setCategories([...categories, category]);
-      setNewCategory({ name: '', description: '' });
-      setIsAdding(false);
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.categories.getAll();
+      setCategories(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError('Не удалось загрузить категории');
+      console.error('Error fetching categories:', err);
+      setCategories([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDelete = (id: number) => {
+  const handleAdd = async () => {
+    if (newCategory.name.trim() && newCategory.slug.trim()) {
+      try {
+        await api.admin.categories.create({
+          name: newCategory.name,
+          slug: newCategory.slug,
+          description: newCategory.description
+        });
+        setNewCategory({ name: '', slug: '', description: '' });
+        setIsAdding(false);
+        fetchCategories();
+      } catch (err) {
+        alert('Не удалось создать категорию');
+        console.error('Error creating category:', err);
+      }
+    }
+  };
+
+  const handleDelete = async (id: number) => {
     const category = categories.find(c => c.id === id);
     if (category && category.recipeCount > 0) {
       alert(`Невозможно удалить категорию "${category.name}", так как в ней ${category.recipeCount} рецептов`);
       return;
     }
     if (window.confirm('Удалить категорию?')) {
-      setCategories(categories.filter(c => c.id !== id));
+      try {
+        await api.admin.categories.delete(id);
+        fetchCategories();
+      } catch (err) {
+        alert('Не удалось удалить категорию');
+        console.error('Error deleting category:', err);
+      }
     }
   };
+
+  if (loading) {
+    return <div className="loading-message">Загрузка категорий...</div>;
+  }
+
+  if (error) {
+    return <div className="error-message">{error}</div>;
+  }
 
   return (
     <div className="admin-common">
@@ -63,6 +91,15 @@ function AdminCategories() {
               value={newCategory.name}
               onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
               placeholder="Название категории"
+            />
+          </div>
+          <div className="form-group">
+            <label>Slug (URL) *</label>
+            <input
+              type="text"
+              value={newCategory.slug}
+              onChange={(e) => setNewCategory({ ...newCategory, slug: e.target.value })}
+              placeholder="salads, desserts, etc."
             />
           </div>
           <div className="form-group">
@@ -98,11 +135,10 @@ function AdminCategories() {
                 <td><code>{category.slug}</code></td>
                 <td>{category.description || '-'}</td>
                 <td>
-                  <span className="count-badge">{category.recipeCount}</span>
+                  <span className="count-badge">{category.recipeCount || 0}</span>
                 </td>
                 <td>
                   <div className="table-actions">
-                    <button className="btn-edit" title="Редактировать">✏️</button>
                     <button
                       onClick={() => handleDelete(category.id)}
                       className="btn-delete"
@@ -117,6 +153,12 @@ function AdminCategories() {
           </tbody>
         </table>
       </div>
+
+      {categories.length === 0 && (
+        <div className="no-results">
+          <p>Категории не найдены</p>
+        </div>
+      )}
     </div>
   );
 }

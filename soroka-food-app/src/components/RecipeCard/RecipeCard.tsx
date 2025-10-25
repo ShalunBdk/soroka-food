@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Recipe } from '../../types/index';
+import { getImageUrl } from '../../utils/image';
 import './RecipeCard.css';
 
 interface RecipeCardProps {
@@ -10,7 +11,7 @@ interface RecipeCardProps {
 const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
   return (
     <Link to={`/recipe/${recipe.id}`} className="recipe-card">
-      <img src={recipe.image} alt={recipe.title} className="recipe-image" />
+      <img src={getImageUrl(recipe.image)} alt={recipe.title} className="recipe-image" />
       <div className="recipe-info">
         <h3 className="recipe-title">{recipe.title}</h3>
         <p className="recipe-description">{recipe.description}</p>

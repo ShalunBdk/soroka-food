@@ -1,21 +1,55 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { recipes } from '../../data/recipes';
+import api from '../../services/api';
+import { getImageUrl } from '../../utils/image';
 import './AdminRecipes.css';
 
 function AdminRecipes() {
+  const [recipes, setRecipes] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
 
-  const allCategories = Array.from(
-    new Set(recipes.flatMap(recipe => recipe.category))
-  );
+  // Fetch recipes and categories
+  useEffect(() => {
+    fetchRecipes();
+    fetchCategories();
+  }, []);
 
-  const filteredRecipes = recipes
+  const fetchRecipes = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.admin.recipes.getAll(1, 100);
+      setRecipes(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      setError('Не удалось загрузить рецепты');
+      console.error('Error fetching recipes:', err);
+      setRecipes([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const data = await api.categories.getAll();
+      setCategories(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+      setCategories([]);
+    }
+  };
+
+  const filteredRecipes = (recipes || [])
     .filter(recipe => {
       const matchesSearch = recipe.title.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = categoryFilter === 'all' || recipe.category.includes(categoryFilter);
+      const matchesCategory = categoryFilter === 'all' ||
+        (recipe.categories && recipe.categories.some((c: any) => c.name === categoryFilter));
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
@@ -23,21 +57,35 @@ function AdminRecipes() {
         case 'title':
           return a.title.localeCompare(b.title);
         case 'views':
-          return b.views - a.views;
+          return (b.views || 0) - (a.views || 0);
         case 'rating':
-          return b.rating - a.rating;
+          return (b.rating || 0) - (a.rating || 0);
         case 'date':
         default:
           return b.id - a.id;
       }
     });
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm('Вы уверены, что хотите удалить этот рецепт?')) {
-      console.log('Удаление рецепта:', id);
-      // Здесь будет логика удаления
+      try {
+        await api.admin.recipes.delete(id);
+        alert('Рецепт успешно удален');
+        fetchRecipes(); // Refresh the list
+      } catch (err) {
+        alert('Не удалось удалить рецепт');
+        console.error('Error deleting recipe:', err);
+      }
     }
   };
+
+  if (loading) {
+    return <div className="loading-message">Загрузка рецептов...</div>;
+  }
+
+  if (error) {
+    return <div className="error-message">{error}</div>;
+  }
 
   return (
     <div className="admin-recipes">
@@ -69,8 +117,8 @@ function AdminRecipes() {
             className="filter-select"
           >
             <option value="all">Все категории</option>
-            {allCategories.map(category => (
-              <option key={category} value={category}>{category}</option>
+            {Array.isArray(categories) && categories.map(category => (
+              <option key={category.id} value={category.name}>{category.name}</option>
             ))}
           </select>
         </div>
@@ -108,25 +156,29 @@ function AdminRecipes() {
             </tr>
           </thead>
           <tbody>
-            {filteredRecipes.map(recipe => (
-              <tr key={recipe.id}>
-                <td>
-                  <img src={recipe.image} alt={recipe.title} className="table-recipe-image" />
-                </td>
-                <td>
-                  <strong>{recipe.title}</strong>
-                  <p className="recipe-desc">{recipe.description}</p>
-                </td>
-                <td>
-                  {recipe.category.map(cat => (
-                    <span key={cat} className="category-badge">{cat}</span>
-                  ))}
-                </td>
-                <td>{recipe.views.toLocaleString()}</td>
-                <td>
-                  <span className="rating-badge">{recipe.rating}</span>
-                </td>
-                <td>{recipe.date}</td>
+            {filteredRecipes && filteredRecipes.length > 0 ? (
+              filteredRecipes.map(recipe => (
+                <tr key={recipe.id}>
+                  <td>
+                    <img src={getImageUrl(recipe.image)} alt={recipe.title} className="table-recipe-image" />
+                  </td>
+                  <td>
+                    <strong>{recipe.title}</strong>
+                    <p className="recipe-desc">{recipe.description}</p>
+                  </td>
+                  <td>
+                    {Array.isArray(recipe.categories) && recipe.categories.map((cat: any) => (
+                      <span key={cat.id || cat.name} className="category-badge">{cat.name}</span>
+                    ))}
+                    {(!recipe.categories || recipe.categories.length === 0) && (
+                      <span className="category-badge">Без категории</span>
+                    )}
+                  </td>
+                  <td>{(recipe.views || 0).toLocaleString()}</td>
+                  <td>
+                    <span className="rating-badge">{recipe.rating || 0}</span>
+                  </td>
+                  <td>{recipe.date || 'N/A'}</td>
                 <td>
                   <div className="table-actions">
                     <Link to={`/recipe/${recipe.id}`} className="btn-view" title="Просмотр">
@@ -145,16 +197,17 @@ function AdminRecipes() {
                   </div>
                 </td>
               </tr>
-            ))}
+              ))
+            ) : (
+              <tr>
+                <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>
+                  {loading ? 'Загрузка...' : 'Рецепты не найдены'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
-
-      {filteredRecipes.length === 0 && (
-        <div className="no-results">
-          <p>Рецепты не найдены</p>
-        </div>
-      )}
     </div>
   );
 }

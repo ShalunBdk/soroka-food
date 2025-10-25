@@ -1,0 +1,347 @@
+// API Configuration
+const API_BASE_URL = 'http://localhost:3000/api';
+
+// API Error class
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public data?: any
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+// Token management
+export const tokenManager = {
+  getToken(): string | null {
+    return localStorage.getItem('auth_token');
+  },
+
+  setToken(token: string): void {
+    localStorage.setItem('auth_token', token);
+  },
+
+  removeToken(): void {
+    localStorage.removeItem('auth_token');
+  },
+
+  isAuthenticated(): boolean {
+    return !!this.getToken();
+  }
+};
+
+// Base API request function
+async function apiRequest<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
+
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+
+  // Add authorization token if available
+  const token = tokenManager.getToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+
+    // Handle non-JSON responses or empty responses
+    const contentType = response.headers.get('content-type');
+    const hasJson = contentType?.includes('application/json');
+
+    if (!response.ok) {
+      const errorData = hasJson ? await response.json() : { message: response.statusText };
+
+      // Auto-logout on 401 Unauthorized
+      if (response.status === 401) {
+        tokenManager.removeToken();
+        window.location.href = '/admin/login';
+      }
+
+      throw new ApiError(
+        errorData.message || 'An error occurred',
+        response.status,
+        errorData
+      );
+    }
+
+    // Return null for 204 No Content
+    if (response.status === 204) {
+      return null as T;
+    }
+
+    return hasJson ? await response.json() : null;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(
+      error instanceof Error ? error.message : 'Network error',
+      0
+    );
+  }
+}
+
+// Public API methods
+export const api = {
+  // ========== Auth API ==========
+  auth: {
+    async login(username: string, password: string): Promise<{ token: string; user: any }> {
+      const response = await apiRequest<{ token: string; user: any }>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      });
+
+      // Save token
+      if (response.token) {
+        tokenManager.setToken(response.token);
+      }
+
+      return response;
+    },
+
+    async register(username: string, email: string, password: string): Promise<{ token: string; user: any }> {
+      return apiRequest('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ username, email, password }),
+      });
+    },
+
+    async getProfile(): Promise<any> {
+      return apiRequest('/auth/profile');
+    },
+
+    logout(): void {
+      tokenManager.removeToken();
+    }
+  },
+
+  // ========== Recipes API (Public) ==========
+  recipes: {
+    async getAll(page = 1, limit = 9): Promise<{ data: any[]; pagination: any }> {
+      return apiRequest(`/recipes?page=${page}&limit=${limit}`);
+    },
+
+    async getById(id: number): Promise<any> {
+      return apiRequest(`/recipes/${id}`);
+    },
+
+    async getByCategory(slug: string, page = 1, limit = 9): Promise<{ data: any[]; pagination: any }> {
+      return apiRequest(`/categories/${slug}/recipes?page=${page}&limit=${limit}`);
+    }
+  },
+
+  // ========== Categories API (Public) ==========
+  categories: {
+    async getAll(): Promise<any[]> {
+      return apiRequest('/categories');
+    }
+  },
+
+  // ========== Comments API ==========
+  comments: {
+    async getByRecipeId(recipeId: number): Promise<any[]> {
+      return apiRequest(`/comments/recipe/${recipeId}`);
+    },
+
+    async create(data: { recipeId: number; author: string; email: string; rating: number; text: string }): Promise<any> {
+      return apiRequest('/comments', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    }
+  },
+
+  // ========== Newsletter API ==========
+  newsletter: {
+    async subscribe(email: string): Promise<{ message: string }> {
+      return apiRequest('/newsletter/subscribe', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+    }
+  },
+
+  // ========== Settings API (Public) ==========
+  settings: {
+    async getPublic(): Promise<any> {
+      return apiRequest('/settings');
+    }
+  },
+
+  // ========== Admin API ==========
+  admin: {
+    // Admin Stats
+    async getStats(): Promise<any> {
+      return apiRequest('/admin/stats');
+    },
+
+    // Admin Recipes
+    recipes: {
+      async getAll(page = 1, limit = 10): Promise<{ data: any[]; pagination: any }> {
+        return apiRequest(`/admin/recipes?page=${page}&limit=${limit}`);
+      },
+
+      async getById(id: number): Promise<any> {
+        return apiRequest(`/admin/recipes/${id}`);
+      },
+
+      async create(data: any): Promise<any> {
+        return apiRequest('/admin/recipes', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+
+      async update(id: number, data: any): Promise<any> {
+        return apiRequest(`/admin/recipes/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+      },
+
+      async delete(id: number): Promise<void> {
+        return apiRequest(`/admin/recipes/${id}`, {
+          method: 'DELETE',
+        });
+      }
+    },
+
+    // Admin Categories
+    categories: {
+      async create(data: { name: string; slug: string; description?: string }): Promise<any> {
+        return apiRequest('/admin/categories', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+
+      async update(id: number, data: { name: string; slug: string; description?: string }): Promise<any> {
+        return apiRequest(`/admin/categories/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+      },
+
+      async delete(id: number): Promise<void> {
+        return apiRequest(`/admin/categories/${id}`, {
+          method: 'DELETE',
+        });
+      }
+    },
+
+    // Admin Comments
+    comments: {
+      async getAll(status?: 'APPROVED' | 'PENDING' | 'SPAM'): Promise<any[]> {
+        const query = status ? `?status=${status}` : '';
+        return apiRequest(`/admin/comments${query}`);
+      },
+
+      async updateStatus(id: number, status: 'APPROVED' | 'PENDING' | 'SPAM'): Promise<any> {
+        return apiRequest(`/admin/comments/${id}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status }),
+        });
+      },
+
+      async delete(id: number): Promise<void> {
+        return apiRequest(`/admin/comments/${id}`, {
+          method: 'DELETE',
+        });
+      }
+    },
+
+    // Admin Newsletter
+    newsletter: {
+      async getAll(): Promise<any[]> {
+        return apiRequest('/admin/newsletter');
+      },
+
+      async delete(id: number): Promise<void> {
+        return apiRequest(`/admin/newsletter/${id}`, {
+          method: 'DELETE',
+        });
+      }
+    },
+
+    // Admin Settings
+    settings: {
+      async get(): Promise<any> {
+        return apiRequest('/admin/settings');
+      },
+
+      async update(data: any): Promise<any> {
+        return apiRequest('/admin/settings', {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+      }
+    }
+  },
+
+  // ========== Upload API ==========
+  upload: {
+    async recipeImage(file: File): Promise<{ url: string }> {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const token = tokenManager.getToken();
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/upload/recipe-image`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new ApiError(error.message || 'Upload failed', response.status);
+      }
+
+      return response.json();
+    },
+
+    async stepImages(files: File[]): Promise<{ urls: string[] }> {
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('images', file);
+      });
+
+      const token = tokenManager.getToken();
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/upload/step-images`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new ApiError(error.message || 'Upload failed', response.status);
+      }
+
+      return response.json();
+    }
+  }
+};
+
+export default api;

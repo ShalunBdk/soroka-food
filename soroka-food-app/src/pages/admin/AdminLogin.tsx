@@ -1,23 +1,31 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api, { ApiError } from '../../services/api';
 import './AdminLogin.css';
 
 function AdminLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
-    // Простая проверка (в реальном приложении используйте API)
-    if (username === 'admin' && password === 'admin') {
-      localStorage.setItem('admin_logged_in', 'true');
+    try {
+      await api.auth.login(username, password);
       navigate('/admin');
-    } else {
-      setError('Неверный логин или пароль');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Произошла ошибка при входе');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,13 +64,13 @@ function AdminLogin() {
             />
           </div>
 
-          <button type="submit" className="admin-login-btn">
-            Войти
+          <button type="submit" className="admin-login-btn" disabled={loading}>
+            {loading ? 'Вход...' : 'Войти'}
           </button>
         </form>
 
         <div className="admin-login-footer">
-          <p>Логин: admin | Пароль: admin</p>
+          <p>Логин: admin | Пароль: admin123</p>
         </div>
       </div>
     </div>

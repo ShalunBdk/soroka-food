@@ -1,17 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Breadcrumbs from '../components/Breadcrumbs/Breadcrumbs';
 import Sidebar from '../components/Sidebar/Sidebar';
 import RecipeCard from '../components/RecipeCard/RecipeCard';
 import Pagination from '../components/Pagination/Pagination';
 import Newsletter from '../components/Newsletter/Newsletter';
 import SocialLinks from '../components/SocialLinks/SocialLinks';
-import { recipes } from '../data/recipes';
-import type { SidebarSection } from '../types/index';
+import api from '../services/api';
+import type { Recipe, SidebarSection } from '../types/index';
 import '../styles/Home.css';
 
 const Home: React.FC = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [socialLinks, setSocialLinks] = useState<{
+    youtube?: string;
+    instagram?: string;
+    telegram?: string;
+    tiktok?: string;
+  }>({});
   const recipesPerPage = 9;
 
   const sidebarSections: SidebarSection[] = [
@@ -53,9 +63,41 @@ const Home: React.FC = () => {
     { label: 'Домашние рецепты приготовления блюд' }
   ];
 
-  const totalPages = Math.ceil(recipes.length / recipesPerPage);
-  const startIndex = (currentPage - 1) * recipesPerPage;
-  const currentRecipes = recipes.slice(startIndex, startIndex + recipesPerPage);
+  // Fetch settings from API
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const settings = await api.settings.getPublic();
+        if (settings && settings.socialLinks) {
+          setSocialLinks(settings.socialLinks);
+        }
+      } catch (err) {
+        console.error('Error fetching settings:', err);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
+  // Fetch recipes from API
+  useEffect(() => {
+    const fetchRecipes = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await api.recipes.getAll(currentPage, recipesPerPage);
+        setRecipes(response.data);
+        setTotalPages(response.pagination.totalPages);
+      } catch (err) {
+        setError('Не удалось загрузить рецепты');
+        console.error('Error fetching recipes:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecipes();
+  }, [currentPage]);
 
   return (
     <>
@@ -98,17 +140,33 @@ const Home: React.FC = () => {
             </button>
           </div>
 
-          <div className="recipes-grid">
-            {currentRecipes.map((recipe) => (
-              <RecipeCard key={recipe.id} recipe={recipe} />
-            ))}
-          </div>
+          {loading && (
+            <div className="loading-message">Загрузка рецептов...</div>
+          )}
 
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
+          {error && (
+            <div className="error-message">{error}</div>
+          )}
+
+          {!loading && !error && (!recipes || recipes.length === 0) && (
+            <div className="empty-message">Рецепты не найдены</div>
+          )}
+
+          {!loading && !error && recipes && recipes.length > 0 && (
+            <div className="recipes-grid">
+              {recipes.map((recipe) => (
+                <RecipeCard key={recipe.id} recipe={recipe} />
+              ))}
+            </div>
+          )}
+
+          {!loading && recipes && recipes.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          )}
         </main>
 
         <aside className="right-sidebar">
@@ -117,10 +175,18 @@ const Home: React.FC = () => {
             <Newsletter />
           </div>
 
-          <div className="right-sidebar-section">
-            <h3 className="right-sidebar-title">Мы в соцсетях</h3>
-            <SocialLinks />
-          </div>
+          {/* Показываем блок только если есть хотя бы одна ссылка */}
+          {(socialLinks.youtube || socialLinks.instagram || socialLinks.telegram || socialLinks.tiktok) && (
+            <div className="right-sidebar-section">
+              <h3 className="right-sidebar-title">Мы в соцсетях</h3>
+              <SocialLinks
+                youtube={socialLinks.youtube}
+                instagram={socialLinks.instagram}
+                telegram={socialLinks.telegram}
+                tiktok={socialLinks.tiktok}
+              />
+            </div>
+          )}
 
           <div className="right-sidebar-section">
             <h3 className="right-sidebar-title">Статистика сайта</h3>

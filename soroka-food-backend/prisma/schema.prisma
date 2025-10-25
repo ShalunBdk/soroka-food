@@ -1,0 +1,152 @@
+// Prisma schema for Soroka Food database
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Admin users (editors and admins)
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String   @unique
+  password  String   // hashed with bcrypt
+  role      Role     @default(EDITOR)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+}
+
+// Recipe categories
+model Category {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  slug        String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  recipes     RecipeCategory[]
+
+  @@map("categories")
+}
+
+// Recipes
+model Recipe {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  image       String?  // URL to main recipe image
+  cookingTime Int      // in minutes
+  calories    Int
+  servings    Int
+  author      String   @default("Soroka")
+  date        DateTime @default(now())
+  views       Int      @default(0)
+  rating      Float    @default(0)
+  status      Status   @default(DRAFT)
+
+  // JSON fields for ingredients, instructions, nutrition, tips
+  ingredients Json     // Array of {name: string, amount: string}
+  instructions Json    // Array of {stepNumber: number, text: string, images?: string[]}
+  nutrition   Json     // {calories: number, protein: number, fat: number, carbs: number}
+  tips        Json     // Array of strings
+  tags        String[] // Array of tag strings
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categories  RecipeCategory[]
+  comments    Comment[]
+
+  @@map("recipes")
+}
+
+enum Status {
+  PUBLISHED
+  DRAFT
+}
+
+// Many-to-many relationship between recipes and categories
+model RecipeCategory {
+  recipeId   Int
+  categoryId Int
+
+  recipe     Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([recipeId, categoryId])
+  @@map("recipe_categories")
+}
+
+// Comments on recipes
+model Comment {
+  id        Int           @id @default(autoincrement())
+  recipeId  Int
+  author    String
+  email     String?
+  rating    Int           // 1-5 stars
+  text      String
+  status    CommentStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  recipe    Recipe        @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+enum CommentStatus {
+  APPROVED
+  PENDING
+  SPAM
+}
+
+// Newsletter subscribers
+model NewsletterSubscriber {
+  id             Int                @id @default(autoincrement())
+  email          String             @unique
+  status         SubscriptionStatus @default(ACTIVE)
+  subscribedDate DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@map("newsletter_subscribers")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  UNSUBSCRIBED
+}
+
+// Site settings (single row)
+model SiteSettings {
+  id              Int      @id @default(1)
+  siteName        String   @default("Soroka Food")
+  siteDescription String?
+  logo            String?
+
+  // Social links
+  youtube         String?
+  instagram       String?
+  telegram        String?
+  tiktok          String?
+
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String?
+
+  updatedAt       DateTime @updatedAt
+
+  @@map("site_settings")
+}

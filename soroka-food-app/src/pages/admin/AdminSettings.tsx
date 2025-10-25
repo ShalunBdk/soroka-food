@@ -1,4 +1,6 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
+import api from '../../services/api';
+import { getImageUrl } from '../../utils/image';
 import type { SiteSettings } from '../../types';
 import './AdminCommon.css';
 
@@ -19,12 +21,90 @@ function AdminSettings() {
       metaKeywords: 'рецепты, кулинария, готовка, блюда'
     }
   });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    console.log('Сохранение настроек:', settings);
-    alert('Настройки сохранены успешно!');
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.admin.settings.get();
+      if (data) {
+        // Ensure nested objects exist
+        setSettings({
+          siteName: data.siteName || '',
+          siteDescription: data.siteDescription || '',
+          logo: data.logo || '',
+          socialLinks: {
+            youtube: data.socialLinks?.youtube || '',
+            instagram: data.socialLinks?.instagram || '',
+            telegram: data.socialLinks?.telegram || '',
+            tiktok: data.socialLinks?.tiktok || ''
+          },
+          seo: {
+            metaTitle: data.seo?.metaTitle || '',
+            metaDescription: data.seo?.metaDescription || '',
+            metaKeywords: data.seo?.metaKeywords || ''
+          }
+        });
+      }
+    } catch (err) {
+      setError('Не удалось загрузить настройки');
+      console.error('Error fetching settings:', err);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Пожалуйста, выберите изображение');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const result = await api.upload.recipeImage(file);
+      setSettings({ ...settings, logo: result.url });
+      alert('Логотип успешно загружен!');
+    } catch (err) {
+      console.error('Error uploading logo:', err);
+      alert('Не удалось загрузить логотип');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await api.admin.settings.update(settings);
+      alert('Настройки сохранены успешно!');
+    } catch (err) {
+      alert('Не удалось сохранить настройки');
+      console.error('Error saving settings:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="loading-message">Загрузка настроек...</div>;
+  }
+
+  if (error) {
+    return <div className="error-message">{error}</div>;
+  }
 
   return (
     <div className="admin-common">
@@ -52,13 +132,32 @@ function AdminSettings() {
           </div>
 
           <div className="form-group">
-            <label>Логотип (URL)</label>
-            <input
-              type="text"
-              value={settings.logo}
-              onChange={(e) => setSettings({ ...settings, logo: e.target.value })}
-              placeholder="https://example.com/logo.png"
-            />
+            <label>Логотип</label>
+            <div className="file-upload-group">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                disabled={uploading}
+                className="file-input"
+              />
+              <span className="file-hint">
+                {uploading ? 'Загрузка...' : 'Выберите изображение логотипа'}
+              </span>
+            </div>
+            {settings.logo && (
+              <div className="logo-preview">
+                <img src={getImageUrl(settings.logo)} alt="Logo Preview" style={{ maxWidth: '200px', marginTop: '10px' }} />
+                <button
+                  type="button"
+                  onClick={() => setSettings({ ...settings, logo: '' })}
+                  className="btn-remove"
+                  style={{ marginTop: '10px' }}
+                >
+                  Удалить логотип
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -68,10 +167,10 @@ function AdminSettings() {
             <label>YouTube</label>
             <input
               type="url"
-              value={settings.socialLinks.youtube}
+              value={settings.socialLinks?.youtube || ''}
               onChange={(e) => setSettings({
                 ...settings,
-                socialLinks: { ...settings.socialLinks, youtube: e.target.value }
+                socialLinks: { ...(settings.socialLinks || {}), youtube: e.target.value }
               })}
               placeholder="https://youtube.com/@channel"
             />
@@ -81,10 +180,10 @@ function AdminSettings() {
             <label>Instagram</label>
             <input
               type="url"
-              value={settings.socialLinks.instagram}
+              value={settings.socialLinks?.instagram || ''}
               onChange={(e) => setSettings({
                 ...settings,
-                socialLinks: { ...settings.socialLinks, instagram: e.target.value }
+                socialLinks: { ...(settings.socialLinks || {}), instagram: e.target.value }
               })}
               placeholder="https://instagram.com/username"
             />
@@ -94,10 +193,10 @@ function AdminSettings() {
             <label>Telegram</label>
             <input
               type="url"
-              value={settings.socialLinks.telegram}
+              value={settings.socialLinks?.telegram || ''}
               onChange={(e) => setSettings({
                 ...settings,
-                socialLinks: { ...settings.socialLinks, telegram: e.target.value }
+                socialLinks: { ...(settings.socialLinks || {}), telegram: e.target.value }
               })}
               placeholder="https://t.me/channel"
             />
@@ -107,10 +206,10 @@ function AdminSettings() {
             <label>TikTok</label>
             <input
               type="url"
-              value={settings.socialLinks.tiktok}
+              value={settings.socialLinks?.tiktok || ''}
               onChange={(e) => setSettings({
                 ...settings,
-                socialLinks: { ...settings.socialLinks, tiktok: e.target.value }
+                socialLinks: { ...(settings.socialLinks || {}), tiktok: e.target.value }
               })}
               placeholder="https://tiktok.com/@username"
             />
@@ -123,10 +222,10 @@ function AdminSettings() {
             <label>Meta Title</label>
             <input
               type="text"
-              value={settings.seo.metaTitle}
+              value={settings.seo?.metaTitle || ''}
               onChange={(e) => setSettings({
                 ...settings,
-                seo: { ...settings.seo, metaTitle: e.target.value }
+                seo: { ...(settings.seo || {}), metaTitle: e.target.value }
               })}
               placeholder="Заголовок страницы в поисковиках"
             />
@@ -135,10 +234,10 @@ function AdminSettings() {
           <div className="form-group">
             <label>Meta Description</label>
             <textarea
-              value={settings.seo.metaDescription}
+              value={settings.seo?.metaDescription || ''}
               onChange={(e) => setSettings({
                 ...settings,
-                seo: { ...settings.seo, metaDescription: e.target.value }
+                seo: { ...(settings.seo || {}), metaDescription: e.target.value }
               })}
               rows={3}
               placeholder="Описание сайта для поисковиков"
@@ -149,10 +248,10 @@ function AdminSettings() {
             <label>Meta Keywords</label>
             <input
               type="text"
-              value={settings.seo.metaKeywords}
+              value={settings.seo?.metaKeywords || ''}
               onChange={(e) => setSettings({
                 ...settings,
-                seo: { ...settings.seo, metaKeywords: e.target.value }
+                seo: { ...(settings.seo || {}), metaKeywords: e.target.value }
               })}
               placeholder="Ключевые слова через запятую"
             />
@@ -160,8 +259,8 @@ function AdminSettings() {
         </div>
 
         <div className="form-actions">
-          <button type="submit" className="btn-submit">
-            💾 Сохранить настройки
+          <button type="submit" className="btn-submit" disabled={saving || uploading}>
+            {saving ? 'Сохранение...' : '💾 Сохранить настройки'}
           </button>
         </div>
       </form>

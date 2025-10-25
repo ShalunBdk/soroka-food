@@ -15,11 +15,12 @@ import AdminComments from './pages/admin/AdminComments';
 import AdminNewsletter from './pages/admin/AdminNewsletter';
 import AdminSettings from './pages/admin/AdminSettings';
 
+import { tokenManager } from './services/api';
 import './App.css';
 
 // Protected route component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = localStorage.getItem('admin_logged_in') === 'true';
+  const isAuthenticated = tokenManager.isAuthenticated();
   return isAuthenticated ? <>{children}</> : <Navigate to="/admin/login" />;
 }
 

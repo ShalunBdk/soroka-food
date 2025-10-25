@@ -1,6 +1,7 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { recipes } from '../../data/recipes';
+import api from '../../services/api';
+import { getImageUrl } from '../../utils/image';
 import type { Ingredient, InstructionStep } from '../../types';
 import './RecipeForm.css';
 
@@ -9,16 +10,18 @@ function RecipeForm() {
   const navigate = useNavigate();
   const isEdit = Boolean(id);
 
-  const existingRecipe = isEdit ? recipes.find(r => r.id === Number(id)) : null;
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
 
-  const [title, setTitle] = useState(existingRecipe?.title || '');
-  const [description, setDescription] = useState(existingRecipe?.description || '');
-  const [image, setImage] = useState(existingRecipe?.image || '');
-  const [cookingTime, setCookingTime] = useState(existingRecipe?.cookingTime || 30);
-  const [servings, setServings] = useState(existingRecipe?.servings || 4);
-  const [calories, setCalories] = useState(existingRecipe?.calories || 200);
-  const [category, setCategory] = useState<string[]>(existingRecipe?.category || []);
-  const [tags, setTags] = useState<string[]>(existingRecipe?.tags || []);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [image, setImage] = useState('');
+  const [cookingTime, setCookingTime] = useState(30);
+  const [servings, setServings] = useState(4);
+  const [calories, setCalories] = useState(200);
+  const [tags, setTags] = useState<string[]>([]);
 
   const [ingredients, setIngredients] = useState<Ingredient[]>([
     { name: '', amount: '' }
@@ -34,8 +37,49 @@ function RecipeForm() {
   const [fat, setFat] = useState(10);
   const [carbs, setCarbs] = useState(25);
 
-  const availableCategories = ['Супы', 'Салаты', 'Вторые блюда', 'Выпечка', 'Десерты', 'Заготовки', 'Завтраки'];
   const availableTags = ['Обед', 'Ужин', 'Завтрак', 'Десерт', 'Быстро', 'Бюджетно'];
+
+  // Fetch categories and recipe data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch categories
+        const categoriesData = await api.categories.getAll();
+        setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+
+        // Fetch recipe data if editing
+        if (isEdit && id) {
+          setLoading(true);
+          const recipeData = await api.admin.recipes.getById(Number(id));
+          setTitle(recipeData.title || '');
+          setDescription(recipeData.description || '');
+          setImage(recipeData.image || '');
+          setCookingTime(recipeData.cookingTime || 30);
+          setServings(recipeData.servings || 4);
+          setCalories(recipeData.calories || 200);
+          setTags(recipeData.tags || []);
+          setIngredients(recipeData.ingredients || [{ name: '', amount: '' }]);
+          setInstructions(recipeData.instructions || [{ stepNumber: 1, text: '', images: [] }]);
+          setTips(recipeData.tips || ['']);
+          setProtein(recipeData.nutrition?.protein || 20);
+          setFat(recipeData.nutrition?.fat || 10);
+          setCarbs(recipeData.nutrition?.carbs || 25);
+
+          // Set selected category IDs
+          if (recipeData.categories && Array.isArray(recipeData.categories)) {
+            setSelectedCategoryIds(recipeData.categories.map((c: any) => c.id));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        alert('Не удалось загрузить данные');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id, isEdit]);
 
   const handleAddIngredient = () => {
     setIngredients([...ingredients, { name: '', amount: '' }]);
@@ -97,9 +141,9 @@ function RecipeForm() {
     setTips(updated);
   };
 
-  const handleCategoryToggle = (cat: string) => {
-    setCategory(prev =>
-      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+  const handleCategoryToggle = (categoryId: number) => {
+    setSelectedCategoryIds(prev =>
+      prev.includes(categoryId) ? prev.filter(id => id !== categoryId) : [...prev, categoryId]
     );
   };
 
@@ -109,34 +153,115 @@ function RecipeForm() {
     );
   };
 
-  const handleSubmit = (e: FormEvent, status: 'published' | 'draft' = 'published') => {
+  // Upload main recipe image
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Пожалуйста, выберите изображение');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const result = await api.upload.recipeImage(file);
+      setImage(result.url);
+      alert('Изображение успешно загружено!');
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      alert('Не удалось загрузить изображение');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Upload step images
+  const handleStepImagesUpload = async (stepIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
+
+    // Check if we would exceed 5 images
+    const currentImages = instructions[stepIndex].images || [];
+    if (currentImages.length + fileArray.length > 5) {
+      alert('Можно загрузить максимум 5 изображений на шаг');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const result = await api.upload.stepImages(fileArray);
+      const updated = [...instructions];
+      if (!updated[stepIndex].images) {
+        updated[stepIndex].images = [];
+      }
+      updated[stepIndex].images = [...updated[stepIndex].images!, ...result.urls];
+      setInstructions(updated);
+      alert('Изображения успешно загружены!');
+    } catch (err) {
+      console.error('Error uploading step images:', err);
+      alert('Не удалось загрузить изображения');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e: FormEvent, status: 'PUBLISHED' | 'DRAFT' = 'PUBLISHED') => {
     e.preventDefault();
 
-    const recipeData = {
-      title,
-      description,
-      image,
-      cookingTime,
-      servings,
-      calories,
-      category,
-      tags,
-      ingredients: ingredients.filter(ing => ing.name && ing.amount),
-      instructions: instructions.filter(inst => inst.text),
-      tips: tips.filter(tip => tip),
-      nutrition: { calories, protein, fat, carbs },
-      status
-    };
+    if (!title || !description) {
+      alert('Пожалуйста, заполните обязательные поля');
+      return;
+    }
 
-    console.log(isEdit ? 'Обновление рецепта:' : 'Создание рецепта:', recipeData);
-    const message = status === 'draft' ? 'сохранен как черновик' : (isEdit ? 'обновлен' : 'создан');
-    alert(`Рецепт ${message} успешно!`);
-    navigate('/admin/recipes');
+    setLoading(true);
+    try {
+      const recipeData = {
+        title,
+        description,
+        image,
+        cookingTime,
+        servings,
+        calories,
+        author: 'Soroka',
+        tags,
+        ingredients: ingredients.filter(ing => ing.name && ing.amount),
+        instructions: instructions.filter(inst => inst.text).map((inst, i) => ({
+          ...inst,
+          stepNumber: i + 1
+        })),
+        tips: tips.filter(tip => tip),
+        nutrition: { calories, protein, fat, carbs },
+        categories: selectedCategoryIds,
+        status
+      };
+
+      if (isEdit && id) {
+        await api.admin.recipes.update(Number(id), recipeData);
+      } else {
+        await api.admin.recipes.create(recipeData);
+      }
+
+      const message = status === 'DRAFT' ? 'сохранен как черновик' : (isEdit ? 'обновлен' : 'создан');
+      alert(`Рецепт ${message} успешно!`);
+      navigate('/admin/recipes');
+    } catch (err) {
+      console.error('Error saving recipe:', err);
+      alert('Не удалось сохранить рецепт');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSaveDraft = (e: FormEvent) => {
-    handleSubmit(e, 'draft');
+    handleSubmit(e, 'DRAFT');
   };
+
+  if (loading && isEdit) {
+    return <div className="loading-message">Загрузка рецепта...</div>;
+  }
 
   return (
     <div className="recipe-form">
@@ -171,16 +296,29 @@ function RecipeForm() {
             </div>
 
             <div className="form-field full-width">
-              <label>Изображение (URL или base64)</label>
-              <input
-                type="text"
-                value={image}
-                onChange={(e) => setImage(e.target.value)}
-                placeholder="URL изображения"
-              />
+              <label>Изображение рецепта</label>
+              <div className="file-upload-group">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={uploading}
+                  className="file-input"
+                />
+                <span className="file-hint">
+                  {uploading ? 'Загрузка...' : 'Выберите изображение (JPG, PNG, WebP)'}
+                </span>
+              </div>
               {image && (
                 <div className="image-preview">
-                  <img src={image} alt="Preview" />
+                  <img src={getImageUrl(image)} alt="Preview" />
+                  <button
+                    type="button"
+                    onClick={() => setImage('')}
+                    className="btn-remove-image"
+                  >
+                    ✕ Удалить
+                  </button>
                 </div>
               )}
             </div>
@@ -223,14 +361,14 @@ function RecipeForm() {
         <div className="form-section">
           <h3>Категории</h3>
           <div className="checkbox-group">
-            {availableCategories.map(cat => (
-              <label key={cat} className="checkbox-label">
+            {Array.isArray(categories) && categories.map(cat => (
+              <label key={cat.id} className="checkbox-label">
                 <input
                   type="checkbox"
-                  checked={category.includes(cat)}
-                  onChange={() => handleCategoryToggle(cat)}
+                  checked={selectedCategoryIds.includes(cat.id)}
+                  onChange={() => handleCategoryToggle(cat.id)}
                 />
-                {cat}
+                {cat.name}
               </label>
             ))}
           </div>
@@ -295,7 +433,7 @@ function RecipeForm() {
                 <div className="step-images-grid">
                   {instruction.images && instruction.images.map((img, imgIndex) => (
                     <div key={imgIndex} className="step-image-item">
-                      <img src={img} alt={`Шаг ${instruction.stepNumber} - ${imgIndex + 1}`} />
+                      <img src={getImageUrl(img)} alt={`Шаг ${instruction.stepNumber} - ${imgIndex + 1}`} />
                       <button
                         type="button"
                         onClick={() => handleRemoveImageFromStep(index, imgIndex)}
@@ -310,23 +448,19 @@ function RecipeForm() {
                 {(!instruction.images || instruction.images.length < 5) && (
                   <div className="add-image-field">
                     <input
-                      type="text"
-                      placeholder="URL изображения"
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          const input = e.currentTarget;
-                          if (input.value.trim()) {
-                            handleAddImageToStep(index, input.value.trim());
-                            input.value = '';
-                          }
-                        }
-                      }}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => handleStepImagesUpload(index, e)}
+                      disabled={uploading}
+                      className="file-input"
                     />
                     <span className="hint-text">
-                      {instruction.images && instruction.images.length > 0
+                      {uploading
+                        ? 'Загрузка...'
+                        : instruction.images && instruction.images.length > 0
                         ? `Добавлено ${instruction.images.length} из 5 изображений`
-                        : 'Введите URL и нажмите Enter'
+                        : 'Выберите изображения (можно несколько)'
                       }
                     </span>
                   </div>
@@ -397,15 +531,15 @@ function RecipeForm() {
         </div>
 
         <div className="form-actions">
-          <button type="submit" className="btn-submit">
-            {isEdit ? 'Сохранить изменения' : 'Опубликовать рецепт'}
+          <button type="submit" className="btn-submit" disabled={loading || uploading}>
+            {loading ? 'Сохранение...' : (isEdit ? 'Сохранить изменения' : 'Опубликовать рецепт')}
           </button>
           {!isEdit && (
-            <button type="button" onClick={handleSaveDraft} className="btn-draft">
+            <button type="button" onClick={handleSaveDraft} className="btn-draft" disabled={loading || uploading}>
               💾 Сохранить как черновик
             </button>
           )}
-          <button type="button" onClick={() => navigate('/admin/recipes')} className="btn-cancel">
+          <button type="button" onClick={() => navigate('/admin/recipes')} className="btn-cancel" disabled={loading || uploading}>
             Отмена
           </button>
         </div>

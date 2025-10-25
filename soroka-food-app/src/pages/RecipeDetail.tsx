@@ -1,21 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Breadcrumbs from '../components/Breadcrumbs/Breadcrumbs';
-import { recipeDetails, comments, recipes } from '../data/recipes';
+import api from '../services/api';
+import { getImageUrl } from '../utils/image';
+import type { RecipeDetail as RecipeDetailType, Comment } from '../types';
 import '../styles/RecipeDetail.css';
 
 const RecipeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const recipeId = parseInt(id || '1');
-  const recipe = recipeDetails[recipeId];
-  const recipeComments = comments[recipeId] || [];
 
-  const [activeTab, setActiveTab] = useState('ingredients');
+  const [recipe, setRecipe] = useState<RecipeDetailType | null>(null);
+  const [recipeComments, setRecipeComments] = useState<Comment[]>([]);
+  const [relatedRecipes, setRelatedRecipes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
+  const [commentAuthor, setCommentAuthor] = useState('');
+  const [commentEmail, setCommentEmail] = useState('');
+  const [commentText, setCommentText] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
 
-  if (!recipe) {
-    return <div>Рецепт не найден</div>;
+  // Fetch recipe details and comments
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [recipeData, commentsData, recipesData] = await Promise.all([
+          api.recipes.getById(recipeId),
+          api.comments.getByRecipeId(recipeId),
+          api.recipes.getAll(1, 4) // Get some related recipes
+        ]);
+
+        setRecipe(recipeData);
+        setRecipeComments(commentsData);
+        setRelatedRecipes(recipesData.data.filter((r: any) => r.id !== recipeId));
+      } catch (err) {
+        setError('Не удалось загрузить рецепт');
+        console.error('Error fetching recipe:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [recipeId]);
+
+  if (loading) {
+    return <div className="loading-message">Загрузка рецепта...</div>;
+  }
+
+  if (error || !recipe) {
+    return <div className="error-message">{error || 'Рецепт не найден'}</div>;
   }
 
   const breadcrumbItems = [
@@ -24,16 +63,37 @@ const RecipeDetail: React.FC = () => {
     { label: recipe.title }
   ];
 
-  const relatedRecipes = recipes.filter(r => r.id !== recipeId).slice(0, 4);
-
-  const handleCommentSubmit = (e: React.FormEvent) => {
+  const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (rating === 0) {
       alert('Пожалуйста, поставьте оценку');
       return;
     }
-    alert('Спасибо за ваш комментарий!');
-    setRating(0);
+
+    setSubmittingComment(true);
+    try {
+      await api.comments.create({
+        recipeId,
+        author: commentAuthor,
+        email: commentEmail,
+        rating,
+        text: commentText
+      });
+
+      alert('Спасибо за ваш комментарий! Он появится после модерации.');
+
+      // Reset form
+      setCommentAuthor('');
+      setCommentEmail('');
+      setCommentText('');
+      setRating(0);
+    } catch (err) {
+      alert('Не удалось отправить комментарий. Попробуйте позже.');
+      console.error('Error submitting comment:', err);
+    } finally {
+      setSubmittingComment(false);
+    }
   };
 
   return (
@@ -62,7 +122,7 @@ const RecipeDetail: React.FC = () => {
             <span>Рейтинг: {'★'.repeat(Math.round(recipe.rating))} ({recipe.rating})</span>
           </div>
 
-          <img src={recipe.image} alt={recipe.title} className="recipe-image" />
+          <img src={getImageUrl(recipe.image)} alt={recipe.title} className="recipe-image" />
 
           <p className="recipe-description">{recipe.description}</p>
 
@@ -93,70 +153,57 @@ const RecipeDetail: React.FC = () => {
             </div>
           </div>
 
-          <div className="tabs">
-            <button
-              className={`tab ${activeTab === 'ingredients' ? 'active' : ''}`}
-              onClick={() => setActiveTab('ingredients')}
-            >
-              Ингредиенты
-            </button>
-            <button
-              className={`tab ${activeTab === 'instructions' ? 'active' : ''}`}
-              onClick={() => setActiveTab('instructions')}
-            >
-              Приготовление
-            </button>
-            <button
-              className={`tab ${activeTab === 'nutrition' ? 'active' : ''}`}
-              onClick={() => setActiveTab('nutrition')}
-            >
-              Пищевая ценность
-            </button>
+          <div>
+            <h2 className="section-title">Ингредиенты</h2>
+            <ul className="ingredients-list">
+              {recipe.ingredients.map((ingredient, index) => (
+                <li key={index}>
+                  {ingredient.amount} {ingredient.name}
+                </li>
+              ))}
+            </ul>
           </div>
 
-          {activeTab === 'ingredients' && (
-            <div>
-              <h2 className="section-title">Ингредиенты</h2>
-              <ul className="ingredients-list">
-                {recipe.ingredients.map((ingredient, index) => (
-                  <li key={index}>
-                    {ingredient.amount} {ingredient.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <div>
+            <h2 className="section-title">Пошаговое приготовление</h2>
+            {recipe.instructions.map((step) => (
+              <div key={step.stepNumber} className="instruction-step">
+                <div className="step-number">{step.stepNumber}</div>
+                <p className="step-text">{step.text}</p>
+                {step.images && step.images.length > 0 && (
+                  <div className="step-images">
+                    {step.images.map((img, idx) => (
+                      <img
+                        key={idx}
+                        src={getImageUrl(img)}
+                        alt={`Шаг ${step.stepNumber} - Изображение ${idx + 1}`}
+                        className="step-image"
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
 
-          {activeTab === 'instructions' && (
-            <div>
-              <h2 className="section-title">Пошаговое приготовление</h2>
-              {recipe.instructions.map((step) => (
-                <div key={step.stepNumber} className="instruction-step">
-                  <div className="step-number">{step.stepNumber}</div>
-                  <p className="step-text">{step.text}</p>
-                </div>
+          <div>
+            <h2 className="section-title">Пищевая ценность на 100 г</h2>
+            <ul className="nutrition-list">
+              <li>Калорийность: ~{recipe.nutrition.calories} ккал</li>
+              <li>Белки: {recipe.nutrition.protein} г</li>
+              <li>Жиры: {recipe.nutrition.fat} г</li>
+              <li>Углеводы: {recipe.nutrition.carbs} г</li>
+            </ul>
+          </div>
+
+          {recipe.tips && recipe.tips.length > 0 && (
+            <div className="notes-box">
+              <div className="notes-title">Полезные советы</div>
+              {recipe.tips.map((tip, index) => (
+                <div key={index} className="note-item">{tip}</div>
               ))}
             </div>
           )}
-
-          {activeTab === 'nutrition' && (
-            <div>
-              <h2 className="section-title">Пищевая ценность на 100 г</h2>
-              <ul className="nutrition-list">
-                <li>Калорийность: ~{recipe.nutrition.calories} ккал</li>
-                <li>Белки: {recipe.nutrition.protein} г</li>
-                <li>Жиры: {recipe.nutrition.fat} г</li>
-                <li>Углеводы: {recipe.nutrition.carbs} г</li>
-              </ul>
-            </div>
-          )}
-
-          <div className="notes-box">
-            <div className="notes-title">Полезные советы</div>
-            {recipe.tips.map((tip, index) => (
-              <div key={index} className="note-item">{tip}</div>
-            ))}
-          </div>
 
           <div className="comments-section">
             <div className="comments-header">
@@ -168,7 +215,23 @@ const RecipeDetail: React.FC = () => {
               <form onSubmit={handleCommentSubmit}>
                 <div className="form-group">
                   <label className="form-label">Ваше имя</label>
-                  <input type="text" className="form-input" required />
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={commentAuthor}
+                    onChange={(e) => setCommentAuthor(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <input
+                    type="email"
+                    className="form-input"
+                    value={commentEmail}
+                    onChange={(e) => setCommentEmail(e.target.value)}
+                    required
+                  />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Ваша оценка</label>
@@ -189,13 +252,20 @@ const RecipeDetail: React.FC = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Комментарий</label>
-                  <textarea className="form-input form-textarea" required></textarea>
+                  <textarea
+                    className="form-input form-textarea"
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    required
+                  ></textarea>
                 </div>
-                <button type="submit" className="submit-btn">Отправить</button>
+                <button type="submit" className="submit-btn" disabled={submittingComment}>
+                  {submittingComment ? 'Отправка...' : 'Отправить'}
+                </button>
               </form>
             </div>
 
-            {recipeComments.map((comment) => (
+            {Array.isArray(recipeComments) && recipeComments.map((comment) => (
               <div key={comment.id} className="comment">
                 <div className="comment-header">
                   <div>

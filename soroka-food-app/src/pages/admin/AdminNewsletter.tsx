@@ -1,36 +1,63 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import api from '../../services/api';
 import type { NewsletterSubscriber } from '../../types';
 import './AdminCommon.css';
 
 function AdminNewsletter() {
-  const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([
-    { id: 1, email: 'user1@example.com', subscribedDate: '15.10.2024', status: 'active' },
-    { id: 2, email: 'user2@example.com', subscribedDate: '14.10.2024', status: 'active' },
-    { id: 3, email: 'user3@example.com', subscribedDate: '13.10.2024', status: 'unsubscribed' },
-    { id: 4, email: 'user4@example.com', subscribedDate: '12.10.2024', status: 'active' },
-    { id: 5, email: 'user5@example.com', subscribedDate: '11.10.2024', status: 'active' }
-  ]);
+  const [subscribers, setSubscribers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'unsubscribed'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'ACTIVE' | 'UNSUBSCRIBED'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredSubscribers = subscribers.filter(sub => {
+  useEffect(() => {
+    fetchSubscribers();
+  }, []);
+
+  const fetchSubscribers = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.admin.newsletter.getAll();
+      setSubscribers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError('Не удалось загрузить подписчиков');
+      console.error('Error fetching subscribers:', err);
+      setSubscribers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredSubscribers = (subscribers || []).filter(sub => {
     const matchesStatus = statusFilter === 'all' || sub.status === statusFilter;
     const matchesSearch = sub.email.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm('Удалить подписчика?')) {
-      setSubscribers(subscribers.filter(s => s.id !== id));
+      try {
+        await api.admin.newsletter.delete(id);
+        fetchSubscribers();
+      } catch (err) {
+        alert('Не удалось удалить подписчика');
+        console.error('Error deleting subscriber:', err);
+      }
     }
   };
 
   const handleExport = () => {
+    if (!filteredSubscribers || filteredSubscribers.length === 0) {
+      alert('Нет подписчиков для экспорта');
+      return;
+    }
+
     const csv = [
       'ID,Email,Дата подписки,Статус',
       ...filteredSubscribers.map(s =>
-        `${s.id},${s.email},${s.subscribedDate},${s.status === 'active' ? 'Активен' : 'Отписан'}`
+        `${s.id},${s.email},${new Date(s.createdAt).toLocaleDateString()},${s.status === 'ACTIVE' ? 'Активен' : 'Отписан'}`
       )
     ].join('\n');
 
@@ -41,6 +68,14 @@ function AdminNewsletter() {
     a.download = 'subscribers.csv';
     a.click();
   };
+
+  if (loading) {
+    return <div className="loading-message">Загрузка подписчиков...</div>;
+  }
+
+  if (error) {
+    return <div className="error-message">{error}</div>;
+  }
 
   return (
     <div className="admin-common">
@@ -69,9 +104,9 @@ function AdminNewsletter() {
             onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
             className="filter-select"
           >
-            <option value="all">Все ({subscribers.length})</option>
-            <option value="active">Активные ({subscribers.filter(s => s.status === 'active').length})</option>
-            <option value="unsubscribed">Отписанные ({subscribers.filter(s => s.status === 'unsubscribed').length})</option>
+            <option value="all">Все ({Array.isArray(subscribers) ? subscribers.length : 0})</option>
+            <option value="ACTIVE">Активные ({Array.isArray(subscribers) ? subscribers.filter(s => s.status === 'ACTIVE').length : 0})</option>
+            <option value="UNSUBSCRIBED">Отписанные ({Array.isArray(subscribers) ? subscribers.filter(s => s.status === 'UNSUBSCRIBED').length : 0})</option>
           </select>
         </div>
 
@@ -96,10 +131,10 @@ function AdminNewsletter() {
               <tr key={subscriber.id}>
                 <td>{subscriber.id}</td>
                 <td><strong>{subscriber.email}</strong></td>
-                <td>{subscriber.subscribedDate}</td>
+                <td>{new Date(subscriber.createdAt).toLocaleDateString()}</td>
                 <td>
-                  <span className={`status-badge ${subscriber.status === 'active' ? 'status-approved' : 'status-pending'}`}>
-                    {subscriber.status === 'active' ? 'Активен' : 'Отписан'}
+                  <span className={`status-badge ${subscriber.status === 'ACTIVE' ? 'status-approved' : 'status-pending'}`}>
+                    {subscriber.status === 'ACTIVE' ? 'Активен' : 'Отписан'}
                   </span>
                 </td>
                 <td>
