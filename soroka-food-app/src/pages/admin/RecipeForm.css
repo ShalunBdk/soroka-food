@@ -1,0 +1,382 @@
+.recipe-form {
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.form-header {
+  margin-bottom: 2rem;
+}
+
+.form-header h2 {
+  font-size: 1.8rem;
+  color: #333;
+  margin: 0;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #8b4513;
+}
+
+form {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 2rem;
+}
+
+.form-section {
+  margin-bottom: 2.5rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #eee;
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+}
+
+.form-section h3 {
+  font-size: 1.3rem;
+  color: #333;
+  margin: 0 0 1.5rem 0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-field.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-field label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #555;
+}
+
+.form-field input,
+.form-field textarea,
+.form-field select {
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  transition: border-color 0.2s;
+}
+
+.form-field input:focus,
+.form-field textarea:focus,
+.form-field select:focus {
+  outline: none;
+  border-color: #8b4513;
+}
+
+.image-preview {
+  margin-top: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+  max-width: 400px;
+}
+
+.image-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+}
+
+.checkbox-label:hover {
+  border-color: #8b4513;
+  background: #fef8f5;
+}
+
+.checkbox-label input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"]:checked + * {
+  color: #8b4513;
+  font-weight: 600;
+}
+
+.dynamic-field {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dynamic-field input,
+.dynamic-field textarea {
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.dynamic-field input:focus,
+.dynamic-field textarea:focus {
+  outline: none;
+  border-color: #8b4513;
+}
+
+.instruction-field {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.instruction-field label {
+  display: block;
+  font-weight: 600;
+  color: #8b4513;
+  margin-bottom: 0.5rem;
+}
+
+.instruction-field textarea {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  margin-bottom: 0.8rem;
+}
+
+.instruction-field textarea:focus {
+  outline: none;
+  border-color: #8b4513;
+}
+
+.btn-add {
+  padding: 0.7rem 1.2rem;
+  background: #f9f9f9;
+  color: #8b4513;
+  border: 1px dashed #8b4513;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-add:hover {
+  background: #8b4513;
+  color: white;
+  border-style: solid;
+}
+
+.btn-remove {
+  padding: 0.7rem 1.2rem;
+  background: white;
+  color: #f44336;
+  border: 1px solid #f44336;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.btn-remove:hover {
+  background: #f44336;
+  color: white;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 2rem;
+}
+
+.btn-submit {
+  padding: 1rem 2rem;
+  background: #8b4513;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-submit:hover {
+  background: #6d3410;
+}
+
+.btn-cancel {
+  padding: 1rem 2rem;
+  background: white;
+  color: #666;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  border-color: #999;
+  background: #f9f9f9;
+}
+
+.btn-draft {
+  padding: 1rem 2rem;
+  background: #ff9800;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-draft:hover {
+  background: #f57c00;
+}
+
+/* Step images section */
+.step-images-section {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 4px;
+}
+
+.step-images-section > label {
+  display: block;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 0.8rem;
+  font-size: 0.9rem;
+}
+
+.step-images-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.step-image-item {
+  position: relative;
+  aspect-ratio: 1;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+  background: white;
+}
+
+.step-image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.btn-remove-image {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  background: rgba(244, 67, 54, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-remove-image:hover {
+  background: #f44336;
+}
+
+.add-image-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.add-image-field input {
+  padding: 0.7rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.add-image-field input:focus {
+  outline: none;
+  border-color: #8b4513;
+}
+
+.hint-text {
+  font-size: 0.85rem;
+  color: #999;
+  font-style: italic;
+}
+
+@media (max-width: 1024px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dynamic-field {
+    grid-template-columns: 1fr;
+  }
+
+  .dynamic-field input:last-child {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  form {
+    padding: 1.5rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .btn-submit,
+  .btn-cancel {
+    width: 100%;
+  }
+}

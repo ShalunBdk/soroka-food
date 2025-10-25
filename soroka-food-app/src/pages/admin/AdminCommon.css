@@ -1,0 +1,400 @@
+.admin-common {
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-primary {
+  padding: 0.8rem 1.5rem;
+  background: #8b4513;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover {
+  background: #6d3410;
+}
+
+.filters-bar {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  display: flex;
+  gap: 1.5rem;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 200px;
+}
+
+.filter-group label {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.filter-input,
+.filter-select {
+  padding: 0.7rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.filter-input:focus,
+.filter-select:focus {
+  outline: none;
+  border-color: #8b4513;
+}
+
+.filter-results {
+  color: #666;
+  font-size: 0.9rem;
+  padding: 0.7rem 0;
+}
+
+.add-form {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.add-form h3 {
+  font-size: 1.3rem;
+  color: #333;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #8b4513;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #555;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #8b4513;
+}
+
+.btn-submit {
+  padding: 0.8rem 1.5rem;
+  background: #8b4513;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-submit:hover {
+  background: #6d3410;
+}
+
+.data-table {
+  background: #fff;
+  border: 1px solid #ddd;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: #f9f9f9;
+  border-bottom: 2px solid #8b4513;
+}
+
+th {
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+tbody tr {
+  border-bottom: 1px solid #eee;
+  transition: background 0.2s;
+}
+
+tbody tr:hover {
+  background: #fafafa;
+}
+
+td {
+  padding: 1rem;
+}
+
+code {
+  background: #f4f4f4;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  font-family: monospace;
+  color: #d63384;
+}
+
+.count-badge {
+  display: inline-block;
+  padding: 0.3rem 0.7rem;
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: 0.85rem;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.status-approved {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-spam {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-edit,
+.btn-delete {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+  font-size: 1rem;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+
+.btn-edit:hover {
+  background: #8b4513;
+  border-color: #8b4513;
+  color: white;
+}
+
+.btn-delete:hover {
+  background: #f44336;
+  border-color: #f44336;
+  color: white;
+}
+
+.no-results {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 3rem;
+  text-align: center;
+  color: #999;
+}
+
+.no-results p {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+/* Comments specific styles */
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.comment-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 1.5rem;
+  border-radius: 4px;
+}
+
+.comment-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.comment-author strong {
+  font-size: 1rem;
+  color: #333;
+  margin-right: 0.8rem;
+}
+
+.comment-date {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.comment-text {
+  margin-bottom: 1rem;
+  color: #555;
+  line-height: 1.6;
+}
+
+.comment-meta {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9rem;
+}
+
+.recipe-link {
+  color: #8b4513;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.recipe-link:hover {
+  text-decoration: underline;
+}
+
+.rating {
+  color: #666;
+}
+
+.comment-actions {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.btn-approve,
+.btn-spam {
+  padding: 0.6rem 1rem;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+
+.btn-approve:hover {
+  background: #4caf50;
+  border-color: #4caf50;
+  color: white;
+}
+
+.btn-spam:hover {
+  background: #ff9800;
+  border-color: #ff9800;
+  color: white;
+}
+
+.comment-actions .btn-delete {
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* Settings form */
+.settings-form {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 2rem;
+}
+
+.settings-section {
+  margin-bottom: 2.5rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #eee;
+}
+
+.settings-section:last-of-type {
+  border-bottom: none;
+}
+
+.settings-section h3 {
+  font-size: 1.3rem;
+  color: #333;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #8b4513;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-group {
+    min-width: auto;
+  }
+
+  .data-table {
+    overflow-x: scroll;
+  }
+
+  table {
+    min-width: 600px;
+  }
+}

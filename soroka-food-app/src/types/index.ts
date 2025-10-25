@@ -12,6 +12,7 @@ export interface Recipe {
   rating: number;
   category: string[];
   tags: string[];
+  status?: 'published' | 'draft'; // Статус рецепта
 }
 
 export interface RecipeDetail extends Recipe {
@@ -29,6 +30,7 @@ export interface Ingredient {
 export interface InstructionStep {
   stepNumber: number;
   text: string;
+  images?: string[]; // Массив URL изображений (до 5 штук)
 }
 
 export interface Nutrition {
@@ -60,4 +62,62 @@ export interface SidebarLink {
 export interface SidebarSection {
   title: string;
   links: SidebarLink[];
+}
+
+// Admin types
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  role: 'admin' | 'editor';
+}
+
+export interface AdminStats {
+  totalRecipes: number;
+  publishedRecipes: number;
+  draftRecipes: number;
+  totalComments: number;
+  pendingComments: number;
+  totalSubscribers: number;
+  viewsLast7Days: number;
+  viewsLast30Days: number;
+}
+
+export interface NewsletterSubscriber {
+  id: number;
+  email: string;
+  subscribedDate: string;
+  status: 'active' | 'unsubscribed';
+}
+
+export interface ExtendedCategory extends Category {
+  description?: string;
+  recipeCount: number;
+}
+
+export interface RecipeStatus {
+  status: 'published' | 'draft';
+}
+
+export interface SiteSettings {
+  siteName: string;
+  siteDescription: string;
+  logo?: string;
+  socialLinks: {
+    youtube?: string;
+    instagram?: string;
+    telegram?: string;
+    tiktok?: string;
+  };
+  seo: {
+    metaTitle?: string;
+    metaDescription?: string;
+    metaKeywords?: string;
+  };
+}
+
+export interface CommentWithRecipe extends Comment {
+  recipeName: string;
+  recipeId: number;
+  status: 'approved' | 'pending' | 'spam';
 }
