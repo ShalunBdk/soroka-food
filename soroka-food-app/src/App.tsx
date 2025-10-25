@@ -1,8 +1,17 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
 import Home from './pages/Home';
 import RecipeDetail from './pages/RecipeDetail';
+import CategoryPage from './pages/CategoryPage';
+import CuisinePage from './pages/CuisinePage';
+import SearchResults from './pages/SearchResults';
+import BestRecipes from './pages/BestRecipes';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import Rules from './pages/Rules';
+import Advertising from './pages/Advertising';
 
 // Admin imports
 import AdminLayout from './components/AdminLayout/AdminLayout';
@@ -14,8 +23,9 @@ import AdminCategories from './pages/admin/AdminCategories';
 import AdminComments from './pages/admin/AdminComments';
 import AdminNewsletter from './pages/admin/AdminNewsletter';
 import AdminSettings from './pages/admin/AdminSettings';
+import AdminStaticPages from './pages/admin/AdminStaticPages';
 
-import { tokenManager } from './services/api';
+import api, { tokenManager } from './services/api';
 import './App.css';
 
 // Protected route component
@@ -25,6 +35,23 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  // Load site settings and update document title
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settings = await api.settings.getPublic();
+        if (settings?.siteName) {
+          document.title = settings.siteName;
+        }
+      } catch (err) {
+        console.error('Error loading site settings for title:', err);
+        // Keep default title if settings fail to load
+      }
+    };
+
+    loadSettings();
+  }, []);
+
   return (
     <Router>
       <div className="app">
@@ -48,6 +75,62 @@ function App() {
             <>
               <Header />
               <Home />
+              <Footer />
+            </>
+          } />
+          <Route path="/category/:slug" element={
+            <>
+              <Header />
+              <CategoryPage />
+              <Footer />
+            </>
+          } />
+          <Route path="/cuisine/:type" element={
+            <>
+              <Header />
+              <CuisinePage />
+              <Footer />
+            </>
+          } />
+          <Route path="/search" element={
+            <>
+              <Header />
+              <SearchResults />
+              <Footer />
+            </>
+          } />
+          <Route path="/best" element={
+            <>
+              <Header />
+              <BestRecipes />
+              <Footer />
+            </>
+          } />
+          <Route path="/about" element={
+            <>
+              <Header />
+              <About />
+              <Footer />
+            </>
+          } />
+          <Route path="/contact" element={
+            <>
+              <Header />
+              <Contact />
+              <Footer />
+            </>
+          } />
+          <Route path="/rules" element={
+            <>
+              <Header />
+              <Rules />
+              <Footer />
+            </>
+          } />
+          <Route path="/advertising" element={
+            <>
+              <Header />
+              <Advertising />
               <Footer />
             </>
           } />
@@ -109,6 +192,13 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <AdminSettings />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/static-pages" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminStaticPages />
               </AdminLayout>
             </ProtectedRoute>
           } />

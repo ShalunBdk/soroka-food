@@ -1,3 +1,6 @@
+/* Import common layout styles */
+@import './Home.css';
+
 .recipe-title {
   font-size: 2rem;
   color: #333;

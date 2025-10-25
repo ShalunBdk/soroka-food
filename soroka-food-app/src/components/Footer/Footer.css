@@ -1,7 +1,7 @@
 .footer {
   background: #333;
   color: #ccc;
-  padding: 2rem 3%;
+  padding: 2rem 48px;
   margin-top: 3rem;
   text-align: center;
 }
@@ -26,4 +26,16 @@
 
 .footer p {
   margin: 0;
+}
+
+@media (max-width: 968px) {
+  .footer {
+    padding: 2rem 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .footer {
+    padding: 2rem 16px;
+  }
 }

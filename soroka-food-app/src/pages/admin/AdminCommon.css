@@ -380,6 +380,175 @@ code {
   padding-top: 1rem;
 }
 
+/* Static Pages Editor */
+.static-pages-container {
+  display: flex;
+  gap: 2rem;
+  min-height: 70vh;
+}
+
+.pages-sidebar {
+  width: 280px;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 1.5rem;
+  height: fit-content;
+}
+
+.pages-sidebar h3 {
+  font-size: 1.2rem;
+  color: #333;
+  margin: 0 0 1rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #8b4513;
+}
+
+.pages-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pages-list li {
+  padding: 1rem;
+  border: 1px solid #eee;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 4px;
+}
+
+.pages-list li:hover {
+  background: #f5f5f5;
+  border-color: #8b4513;
+}
+
+.pages-list li.active {
+  background: #8b4513;
+  border-color: #8b4513;
+  color: white;
+}
+
+.pages-list li strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 1rem;
+}
+
+.pages-list li small {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.page-editor {
+  flex: 1;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 2rem;
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #8b4513;
+}
+
+.editor-header h2 {
+  font-size: 1.5rem;
+  color: #333;
+  margin: 0;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-secondary {
+  padding: 0.8rem 1.5rem;
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+.btn-secondary:disabled,
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.content-editor {
+  font-family: 'Courier New', monospace;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.editor-help {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 1.5rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+}
+
+.editor-help h4 {
+  font-size: 1rem;
+  color: #333;
+  margin: 0 0 0.8rem 0;
+}
+
+.editor-help p {
+  margin: 0 0 0.8rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.editor-help ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.editor-help li {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.editor-help code {
+  background: #fff;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: #d63384;
+}
+
+.no-selection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  color: #999;
+}
+
+.no-selection p {
+  font-size: 1.2rem;
+  margin: 0;
+}
+
 @media (max-width: 768px) {
   .filters-bar {
     flex-direction: column;
@@ -396,5 +565,24 @@ code {
 
   table {
     min-width: 600px;
+  }
+
+  .static-pages-container {
+    flex-direction: column;
+  }
+
+  .pages-sidebar {
+    width: 100%;
+  }
+
+  .editor-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .editor-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }

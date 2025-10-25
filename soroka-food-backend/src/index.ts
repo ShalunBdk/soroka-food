@@ -34,6 +34,7 @@ import categoryRoutes from './routes/categoryRoutes';
 import commentRoutes from './routes/commentRoutes';
 import newsletterRoutes from './routes/newsletterRoutes';
 import settingsRoutes from './routes/settingsRoutes';
+import staticPageRoutes from './routes/staticPageRoutes';
 import adminRoutes from './routes/adminRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 
@@ -44,6 +45,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/static-pages', staticPageRoutes);
 
 // Protected admin routes
 app.use('/api/admin', adminRoutes);

@@ -32,7 +32,7 @@ const RecipeDetail: React.FC = () => {
         const [recipeData, commentsData, recipesData] = await Promise.all([
           api.recipes.getById(recipeId),
           api.comments.getByRecipeId(recipeId),
-          api.recipes.getAll(1, 4) // Get some related recipes
+          api.recipes.getAll(1, 10) // Get more related recipes
         ]);
 
         setRecipe(recipeData);
@@ -104,11 +104,14 @@ const RecipeDetail: React.FC = () => {
         <aside className="sidebar">
           <h3 className="sidebar-title">Похожие рецепты</h3>
           <ul className="sidebar-list">
-            <li><Link to="#">Голубцы классические</Link></li>
-            <li><Link to="#">Капуста тушеная с сосисками</Link></li>
-            <li><Link to="#">Щи из свежей капусты</Link></li>
-            <li><Link to="#">Котлеты из фарша</Link></li>
-            <li><Link to="#">Капустные оладьи</Link></li>
+            {relatedRecipes.slice(0, 5).map((relatedRecipe) => (
+              <li key={relatedRecipe.id}>
+                <Link to={`/recipe/${relatedRecipe.id}`}>{relatedRecipe.title}</Link>
+              </li>
+            ))}
+            {relatedRecipes.length === 0 && (
+              <li style={{ color: '#999' }}>Нет похожих рецептов</li>
+            )}
           </ul>
         </aside>
 
@@ -283,9 +286,9 @@ const RecipeDetail: React.FC = () => {
         <aside className="right-sidebar">
           <div className="right-sidebar-section">
             <h3 className="right-sidebar-title">Популярные рецепты</h3>
-            {relatedRecipes.map((relatedRecipe) => (
+            {relatedRecipes.slice(5, 9).map((relatedRecipe) => (
               <Link key={relatedRecipe.id} to={`/recipe/${relatedRecipe.id}`} className="related-recipe">
-                <img src={relatedRecipe.image} alt={relatedRecipe.title} className="related-image" />
+                <img src={getImageUrl(relatedRecipe.image)} alt={relatedRecipe.title} className="related-image" />
                 <div className="related-info">
                   <div className="related-title">{relatedRecipe.title}</div>
                   <div className="related-meta">
@@ -294,6 +297,9 @@ const RecipeDetail: React.FC = () => {
                 </div>
               </Link>
             ))}
+            {relatedRecipes.length <= 5 && (
+              <p style={{ color: '#999', fontSize: '0.9rem', padding: '1rem' }}>Недостаточно рецептов для отображения</p>
+            )}
           </div>
 
           <div className="right-sidebar-section">
@@ -302,7 +308,7 @@ const RecipeDetail: React.FC = () => {
               {recipe.tags.map((tag, index) => (
                 <Link
                   key={index}
-                  to={`/tag/${tag}`}
+                  to={`/search?q=${encodeURIComponent(tag)}`}
                   style={{
                     padding: '0.4rem 0.8rem',
                     background: '#f5f5f5',

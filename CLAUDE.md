@@ -70,12 +70,30 @@ npm run prisma:seed      # Seed database
 
 ### Frontend Architecture
 
-**Public Site** (`/`, `/recipe/:id`, `/recipes`)
-- Recipe browsing with pagination
+**Public Site Routes**:
+- `/` - Home page with recipe browsing and tab filters (All/New/Popular/With Photo)
+- `/recipe/:id` - Detailed recipe view with ingredients, instructions, nutrition, comments
+- `/recipes` - Recipe listing (same as home)
+- `/category/:slug` - Recipes filtered by category
+- `/cuisine/:type` - Recipes filtered by cuisine type (russian/european/asian/eastern)
+- `/search?q=query` - Search results for recipes by title, description, or tags
+- `/best` - Best/most popular recipes (sorted by views)
+- `/about` - About the site
+- `/contact` - Contact information
+- `/rules` - Site rules and policies
+- `/advertising` - Advertising opportunities
+
+**Features**:
+- Dynamic site branding (logo and name loaded from admin settings)
+- Recipe browsing with pagination and filtering
+- Tab-based filtering (Newest, Popular, With Photo)
+- Search functionality with tag support
 - Detailed recipe views with ingredients, instructions, nutrition info
 - Comment system with ratings (moderated)
 - Newsletter subscription
-- Category sidebar and popular recipes
+- Dynamic category sidebar (loaded from database)
+- Real-time site statistics (recipes, users, comments)
+- Dynamic document title (browser tab updates from settings)
 
 **Admin Panel** (`/admin/*`)
 - JWT-protected routes
@@ -85,11 +103,12 @@ npm run prisma:seed      # Seed database
 - Category management
 - Comment moderation (approve/pending/spam)
 - Newsletter subscriber management
+- Static pages management (About, Contact, Rules, Advertising)
 - Site settings
 
 ### Backend Architecture
 
-**Database Schema (7 tables)**:
+**Database Schema (8 tables)**:
 1. `users` - Admin/editor accounts with hashed passwords
 2. `categories` - Recipe categories with slugs
 3. `recipes` - Recipes with JSON fields (ingredients, instructions, nutrition, tips)
@@ -97,16 +116,22 @@ npm run prisma:seed      # Seed database
 5. `comments` - Comments with moderation status (APPROVED/PENDING/SPAM)
 6. `newsletter_subscribers` - Email subscriptions (ACTIVE/UNSUBSCRIBED)
 7. `site_settings` - Single-row configuration table
+8. `static_pages` - Static pages content (About, Contact, Rules, Advertising)
 
 **API Endpoints**:
 
 *Public (no auth required)*:
 - `POST /api/auth/login` - User login, returns JWT token
 - `POST /api/auth/register` - Create new user
-- `GET /api/recipes` - List published recipes (pagination: ?page=1&limit=9)
+- `GET /api/recipes` - List published recipes (supports ?page=1&limit=9&sort=newest|popular|photo)
 - `GET /api/recipes/:id` - Recipe details (increments views)
+- `GET /api/recipes/search` - Search recipes (?q=query&page=1&limit=9) - searches title, description, tags
+- `GET /api/recipes/stats` - Public site statistics (recipesCount, commentsCount, usersCount)
+- `GET /api/recipes/cuisines/:type` - Recipes by cuisine type (russian/european/asian/eastern)
 - `GET /api/categories` - All categories with recipe counts
-- `GET /api/categories/:slug/recipes` - Recipes by category
+- `GET /api/categories/:slug/recipes` - Recipes by category slug
+- `GET /api/settings` - Public site settings (social links, SEO)
+- `GET /api/static-pages/:slug` - Get static page by slug (about, contact, rules, advertising)
 - `POST /api/comments` - Submit comment (auto-status: PENDING)
 - `GET /api/comments/recipe/:recipeId` - Approved comments only
 - `POST /api/newsletter/subscribe` - Subscribe to newsletter
@@ -129,6 +154,9 @@ npm run prisma:seed      # Seed database
 - `DELETE /api/admin/newsletter/:id` - Delete subscriber
 - `GET /api/admin/settings` - Get site settings
 - `PUT /api/admin/settings` - Update site settings
+- `GET /api/admin/static-pages` - Get all static pages
+- `GET /api/admin/static-pages/:id` - Get static page by ID
+- `PUT /api/admin/static-pages/:id` - Update static page (title, content)
 - `POST /api/upload/recipe-image` - Upload single image (returns {url: string})
 - `POST /api/upload/step-images` - Upload up to 5 step images (returns {urls: string[]})
 
@@ -183,6 +211,7 @@ All TypeScript types defined in `soroka-food-app/src/types/index.ts` match the P
 - `User` - {id, username, email, role: 'ADMIN' | 'EDITOR'}
 - `AdminStats` - dashboard metrics
 - `SiteSettings` - site configuration
+- `StaticPage` - {id, slug, title, content, createdAt, updatedAt}
 
 **Prisma JSON Fields**:
 Recipes store complex data as JSON in PostgreSQL:
@@ -195,17 +224,32 @@ Recipes store complex data as JSON in PostgreSQL:
 ## Component Organization
 
 **Frontend** (`soroka-food-app/src/`):
-- `components/` - Reusable components (Header, Footer, RecipeCard, etc.)
-- `pages/` - Public pages (Home, RecipeDetail)
-- `pages/admin/` - Admin pages (Dashboard, AdminRecipes, RecipeForm, etc.)
+- `components/` - Reusable components
+  - `Header` - Dynamic header with logo and site name from settings
+  - `Footer`, `RecipeCard`, `Pagination`, `Breadcrumbs`
+  - `Sidebar`, `Newsletter`, `SocialLinks`
+  - `SiteStats` - Real-time site statistics component
+- `pages/` - Public pages
+  - `Home.tsx` - Main page with tab filters
+  - `RecipeDetail.tsx` - Detailed recipe view
+  - `CategoryPage.tsx` - Recipes by category
+  - `CuisinePage.tsx` - Recipes by cuisine type
+  - `SearchResults.tsx` - Search results page
+  - `BestRecipes.tsx` - Popular recipes
+  - `About.tsx`, `Contact.tsx`, `Rules.tsx`, `Advertising.tsx` - Static pages
+- `pages/admin/` - Admin pages (Dashboard, AdminRecipes, RecipeForm, AdminStaticPages, etc.)
+- `hooks/` - Custom React hooks
+  - `useCategories.ts` - Fetches categories from API
+  - `useSidebarData.ts` - Generates dynamic sidebar sections
 - `services/` - API client (api.ts) with all backend endpoints
 - `utils/` - Helper functions (image.ts for image URL handling)
 - `styles/` - Page-specific CSS
+  - `Home.css`, `CategoryPage.css`, `StaticPage.css`
 - `types/` - TypeScript type definitions
 
 **Backend** (`soroka-food-backend/src/`):
-- `controllers/` - Request handlers (authController, recipeController, adminController, etc.)
-- `routes/` - Express routers (authRoutes, recipeRoutes, adminRoutes, uploadRoutes, etc.)
+- `controllers/` - Request handlers (authController, recipeController, adminController, staticPageController, etc.)
+- `routes/` - Express routers (authRoutes, recipeRoutes, adminRoutes, staticPageRoutes, uploadRoutes, etc.)
 - `middleware/` - auth, errorHandler, upload (multer)
 - `config/` - database.ts (Prisma client)
 - `utils/` - jwt.ts, password.ts (bcrypt helpers)
@@ -217,6 +261,9 @@ Recipes store complex data as JSON in PostgreSQL:
 - Global styles: `App.css`, `index.css`
 - Admin pages share `AdminCommon.css`
 - No CSS-in-JS or utility frameworks
+- **Typography**: Google Fonts Montserrat (300-700 weights) used for logo branding
+  - Montserrat Light (300) for main site logo text
+  - Loaded in `index.html` with preconnect optimization
 
 ## File Upload Pattern
 
@@ -286,6 +333,68 @@ All arrays must be checked with `Array.isArray()` before mapping to prevent runt
 3. Admin sets status: APPROVED, PENDING, or SPAM
 4. Only APPROVED comments visible on public site
 
+**Recipe Filtering & Sorting**:
+The `GET /api/recipes` endpoint supports filtering via query parameter `?sort=`:
+- `sort=newest` - Sort by creation date (descending)
+- `sort=popular` - Sort by views count (descending)
+- `sort=photo` - Filter recipes that have images only
+
+Frontend implementation uses tabs that update the sort parameter:
+```typescript
+const response = await api.recipes.getAll(currentPage, recipesPerPage, sortParam);
+```
+
+**Search Functionality**:
+- Search endpoint: `GET /api/recipes/search?q=query`
+- Searches across: recipe title, description, and tags
+- Case-insensitive search using Prisma's `contains` with `mode: 'insensitive'`
+- Recipe tags in RecipeDetail link to search (e.g., clicking "Десерт" tag → `/search?q=Десерт`)
+- Full pagination support
+
+**Dynamic Sidebar Categories**:
+Uses custom hooks for data fetching:
+```typescript
+// useCategories.ts - Fetches all categories from API
+// useSidebarData.ts - Transforms categories into sidebar sections
+
+const { sidebarSections } = useSidebarData();
+```
+
+Sidebar sections are dynamically generated:
+- **"Популярно сейчас"** - Top 5 categories by recipe count
+- **"Категории блюд"** - All categories from database
+- **"По типу кухни"** - Static links to cuisine types
+
+**Real-time Site Statistics**:
+The `SiteStats` component automatically fetches statistics:
+- Published recipes count
+- Total users count
+- Approved comments count
+
+Data is fetched from `GET /api/recipes/stats` endpoint and displayed with number formatting.
+
+**Static Pages Management**:
+Static pages (About, Contact, Rules, Advertising) are now dynamic and editable through the admin panel:
+- Content stored in database (`static_pages` table)
+- Each page has: `id`, `slug`, `title`, `content` (HTML), `createdAt`, `updatedAt`
+- Public pages fetch content from API: `GET /api/static-pages/:slug`
+- Admin can edit via `/admin/static-pages`:
+  - Visual editor with HTML support
+  - Side-by-side page list and content editor
+  - Real-time preview of changes
+  - HTML formatting helpers (h2, h3, p, ul, li, a tags)
+- Initial content seeded during database setup
+- All static pages (About.tsx, Contact.tsx, Rules.tsx, Advertising.tsx) use `api.staticPages.getBySlug()` and render with `dangerouslySetInnerHTML`
+
+**Recipe Detail Enhancements**:
+The RecipeDetail page (`/recipe/:id`) includes two sidebars with related content:
+- **Left sidebar "Похожие рецепты"**: Shows first 5 related recipes (titles only, linked)
+- **Right sidebar "Популярные рецепты"**: Shows recipes 6-9 with images and metadata
+- Related recipes loaded from `api.recipes.getAll(1, 10)` and filtered to exclude current recipe
+- All recipe links are functional and navigate to recipe detail pages
+- Images processed with `getImageUrl()` helper for correct display
+- Fallback messages shown when insufficient recipes available
+
 ## API Integration
 
 **Frontend API Client** (`soroka-food-app/src/services/api.ts`):
@@ -298,23 +407,55 @@ The application uses a centralized API client with the following features:
 
 **Key API Sections**:
 ```typescript
-api.auth.login(username, password)      // Login and store token
-api.recipes.getAll(page, limit)          // Public recipes (PUBLISHED only)
-api.recipes.getById(id)                  // Public recipe detail
-api.admin.recipes.getAll(page, limit)    // Admin recipes (all statuses)
-api.admin.recipes.getById(id)            // Admin recipe (for editing)
-api.admin.recipes.create(data)           // Create recipe
-api.admin.recipes.update(id, data)       // Update recipe
-api.upload.recipeImage(file)             // Upload main image
-api.upload.stepImages(files)             // Upload step images
+// Authentication
+api.auth.login(username, password)           // Login and store token
+
+// Public Recipes
+api.recipes.getAll(page, limit, sort)        // Get recipes with optional sort (newest|popular|photo)
+api.recipes.getById(id)                      // Get recipe details
+api.recipes.search(query, page, limit)       // Search recipes by query
+api.recipes.getByCategory(slug, page, limit) // Get recipes by category
+api.recipes.getByCuisine(type, page, limit)  // Get recipes by cuisine type
+api.recipes.getStats()                       // Get public site statistics
+
+// Categories
+api.categories.getAll()                      // Get all categories with counts
+
+// Static Pages
+api.staticPages.getBySlug(slug)              // Get static page by slug (about, contact, rules, advertising)
+
+// Admin
+api.admin.recipes.getAll(page, limit)        // Admin recipes (all statuses)
+api.admin.recipes.getById(id)                // Admin recipe (for editing)
+api.admin.recipes.create(data)               // Create recipe
+api.admin.recipes.update(id, data)           // Update recipe
+
+// Admin Static Pages
+api.admin.staticPages.getAll()               // Get all static pages
+api.admin.staticPages.getById(id)            // Get static page by ID
+api.admin.staticPages.update(id, data)       // Update static page (title, content)
+
+// Upload
+api.upload.recipeImage(file)                 // Upload main image
+api.upload.stepImages(files)                 // Upload step images
 ```
 
-**All components are integrated with API**:
-- Home.tsx - fetches published recipes with pagination
-- RecipeDetail.tsx - fetches recipe and comments
-- All admin pages - full CRUD operations
-- RecipeForm - create/edit with image upload
-- AdminSettings - settings with logo upload
+**Component-API Integration**:
+- **App.tsx** - Loads site settings on mount; updates document title dynamically
+- **Header** - Fetches and displays logo and site name from settings (`api.settings.getPublic()`)
+- **Home.tsx** - Uses tab filters to sort recipes (newest/popular/photo)
+- **CategoryPage.tsx** - Fetches recipes by category slug
+- **CuisinePage.tsx** - Fetches recipes by cuisine type
+- **SearchResults.tsx** - Searches recipes by query string
+- **BestRecipes.tsx** - Fetches popular recipes (sorted by views)
+- **RecipeDetail.tsx** - Fetches recipe details, comments, and 10 related recipes; displays in sidebars; tags link to search
+- **Sidebar** (via useSidebarData) - Dynamically loads categories from database
+- **SiteStats** - Fetches and displays real-time site statistics
+- **Static pages** (About, Contact, Rules, Advertising) - Fetch content from API by slug
+- All admin pages - Full CRUD operations
+- **RecipeForm** - Create/edit with image upload
+- **AdminSettings** - Settings with logo upload and site name configuration
+- **AdminStaticPages** - Edit static page content with HTML editor
 
 ## Development Workflow
 
@@ -340,12 +481,35 @@ npm run dev  # From project root - starts both frontend and backend
 SorokaFood/
 ├── soroka-food-app/          # Frontend
 │   └── src/
-│       ├── components/       # UI components
-│       ├── pages/           # Pages (public + admin)
+│       ├── components/       # Reusable UI components
+│       │   ├── Header/
+│       │   ├── Footer/
+│       │   ├── Sidebar/
+│       │   ├── SiteStats/   # Real-time statistics
+│       │   └── ...
+│       ├── pages/           # Public pages
+│       │   ├── Home.tsx
+│       │   ├── RecipeDetail.tsx
+│       │   ├── CategoryPage.tsx
+│       │   ├── CuisinePage.tsx
+│       │   ├── SearchResults.tsx
+│       │   ├── BestRecipes.tsx
+│       │   ├── About.tsx, Contact.tsx, Rules.tsx, Advertising.tsx
+│       │   └── admin/       # Admin pages
+│       ├── hooks/           # Custom React hooks
+│       │   ├── useCategories.ts
+│       │   └── useSidebarData.ts
+│       ├── services/        # API client
+│       ├── utils/           # Helper functions
+│       ├── styles/          # CSS files
 │       └── types/           # TypeScript types
 ├── soroka-food-backend/      # Backend
 │   ├── src/
-│   │   ├── controllers/     # API controllers
+│   │   ├── controllers/     # Request handlers
+│   │   │   ├── recipeController.ts  # Includes search, cuisines, stats
+│   │   │   ├── categoryController.ts
+│   │   │   ├── staticPageController.ts  # Static pages management
+│   │   │   └── ...
 │   │   ├── routes/          # Express routes
 │   │   ├── middleware/      # Auth, errors, upload
 │   │   └── config/          # Database config
@@ -354,6 +518,7 @@ SorokaFood/
 │   │   └── seed.ts          # Initial data
 │   └── public/uploads/      # Uploaded images
 ├── package.json             # Root - runs both apps
+├── CLAUDE.md               # This file
 ├── QUICKSTART.md           # Quick setup guide
 └── README.md               # Full documentation
 ```
@@ -392,3 +557,86 @@ SorokaFood/
 **Images not displaying**: Ensure you're using `getImageUrl()` helper function, not hardcoded URLs.
 
 **404 on draft recipes**: Use admin endpoint (`api.admin.recipes.getById()`) not public endpoint for editing.
+
+## New Features (Latest Updates)
+
+### Search & Discovery
+- **Full-text search**: Search recipes by title, description, or tags
+- **Tag-based navigation**: Click any recipe tag to search for similar recipes
+- **Cuisine filtering**: Browse recipes by cuisine type (Russian, European, Asian, Eastern)
+- **Category pages**: Dedicated pages for each recipe category
+- **Best recipes page**: View most popular recipes sorted by views
+
+### Dynamic Content
+- **Dynamic sidebar**: Categories are loaded from database, not hardcoded
+- **Popular categories**: Top 5 categories by recipe count displayed in sidebar
+- **Real-time statistics**: Site statistics (recipes, users, comments) fetched from API
+- **Tab filtering**: Filter recipes on home page (All/Newest/Popular/With Photo)
+
+### Static Pages (Dynamic & Editable)
+- `/about` - About the site and team (editable via admin panel)
+- `/contact` - Contact information and business hours (editable via admin panel)
+- `/rules` - Site rules and user policies (editable via admin panel)
+- `/advertising` - Advertising opportunities and pricing (editable via admin panel)
+- Content stored in database and manageable through `/admin/static-pages`
+- Supports HTML formatting for rich content
+- Includes visual editor with formatting helpers
+
+### Custom Hooks
+```typescript
+// Fetch all categories with counts
+const { categories, loading, error } = useCategories();
+
+// Generate dynamic sidebar sections
+const { sidebarSections } = useSidebarData();
+```
+
+### Backend Enhancements
+- **Recipe sorting**: Support for `?sort=newest|popular|photo` parameter
+- **Search endpoint**: Case-insensitive search across multiple fields
+- **Cuisine filtering**: Filter by cuisine type via tags
+- **Public statistics**: Endpoint for public site statistics
+- **Static pages API**: Public and admin endpoints for managing static content
+- All recipe-related endpoints in `recipeController.ts`
+
+### Recent Improvements (Latest)
+
+**Static Pages Management System**:
+- Complete CRUD system for managing static page content
+- Database-driven content (no hardcoded text in components)
+- Admin interface at `/admin/static-pages` with:
+  - Side-by-side page list and content editor
+  - HTML code editor with syntax highlighting
+  - Real-time save functionality
+  - Formatting helpers and guides
+- Initial content automatically seeded during setup
+- All pages (About, Contact, Rules, Advertising) fetch from API
+
+**Recipe Detail Page Enhancements**:
+- Fixed image display in "Популярные рецепты" section (now uses `getImageUrl()`)
+- Made "Похожие рецепты" sidebar functional with real data
+- Loads 10 related recipes and distributes across sidebars:
+  - Left: First 5 recipes (titles only)
+  - Right: Recipes 6-9 (with images and metadata)
+- All recipe links are clickable and navigate correctly
+- Proper fallback messages when insufficient recipes available
+- Consistent image URL handling across all sections
+
+**Dynamic Site Branding System**:
+- **Header component** now dynamically loads and displays site settings:
+  - Logo image (if uploaded by admin) positioned left
+  - Site name (from settings) positioned right of logo
+  - Both loaded from `/api/settings` endpoint
+  - Automatic fallback to default values if API fails
+- **Typography enhancement**:
+  - Integrated Google Fonts Montserrat (weights 300-700)
+  - Logo uses Montserrat Light (weight 300) as free alternative to Avenir LT 35
+  - Applied professional typography settings (kerning, optical sizing, variants)
+- **Dynamic document title**:
+  - Browser tab title automatically updates from site settings
+  - Implemented in `App.tsx` via `useEffect` hook
+  - Fallback to "Soroka Food" if settings unavailable
+- **Admin control**:
+  - Admin can upload logo and set site name via `/admin/settings`
+  - Changes instantly reflected across all pages
+  - Logo preview in admin settings panel

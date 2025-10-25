@@ -1,0 +1,102 @@
+/* Static pages common styles */
+.static-page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 3%;
+}
+
+.static-page-content {
+  background: white;
+  padding: 3rem;
+  border: 1px solid #ddd;
+  line-height: 1.8;
+}
+
+.static-page-title {
+  font-size: 2.5rem;
+  color: #333;
+  margin: 0 0 2rem 0;
+  font-weight: 700;
+  border-bottom: 3px solid #8b4513;
+  padding-bottom: 1rem;
+}
+
+.static-page-content h2 {
+  font-size: 1.8rem;
+  color: #444;
+  margin: 2rem 0 1rem 0;
+  font-weight: 600;
+}
+
+.static-page-content h3 {
+  font-size: 1.4rem;
+  color: #555;
+  margin: 1.5rem 0 0.8rem 0;
+  font-weight: 600;
+}
+
+.static-page-content p {
+  color: #666;
+  margin-bottom: 1.2rem;
+  text-align: justify;
+}
+
+.static-page-content ul {
+  color: #666;
+  margin: 1rem 0 1.5rem 2rem;
+  list-style: disc;
+}
+
+.static-page-content li {
+  margin-bottom: 0.5rem;
+}
+
+.contact-info {
+  background: #f9f9f9;
+  padding: 2rem;
+  border: 1px solid #ddd;
+  margin: 2rem 0;
+}
+
+.contact-item {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+}
+
+.contact-item strong {
+  color: #8b4513;
+  min-width: 120px;
+  font-weight: 600;
+}
+
+.contact-item a {
+  color: #8b4513;
+  text-decoration: none;
+}
+
+.contact-item a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .static-page-content {
+    padding: 2rem 1.5rem;
+  }
+
+  .static-page-title {
+    font-size: 2rem;
+  }
+
+  .static-page-content h2 {
+    font-size: 1.5rem;
+  }
+
+  .contact-item {
+    flex-direction: column;
+  }
+
+  .contact-item strong {
+    margin-bottom: 0.5rem;
+  }
+}

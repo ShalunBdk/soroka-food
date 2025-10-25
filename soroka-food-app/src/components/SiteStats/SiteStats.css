@@ -1,0 +1,26 @@
+.stats-box {
+  background: #f9f9f9;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.stats-item {
+  margin-bottom: 1rem;
+}
+
+.stats-item:last-child {
+  margin-bottom: 0;
+}
+
+.stats-number {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #8b4513;
+  display: block;
+}
+
+.stats-label {
+  font-size: 0.9rem;
+  color: #666;
+}

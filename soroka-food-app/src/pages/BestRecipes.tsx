@@ -9,10 +9,9 @@ import SiteStats from '../components/SiteStats/SiteStats';
 import { useSidebarData } from '../hooks/useSidebarData';
 import api from '../services/api';
 import type { Recipe } from '../types/index';
-import '../styles/Home.css';
+import '../styles/CategoryPage.css';
 
-const Home: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('all');
+const BestRecipes: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -29,7 +28,7 @@ const Home: React.FC = () => {
 
   const breadcrumbItems = [
     { label: 'Главная', url: '/' },
-    { label: 'Домашние рецепты приготовления блюд' }
+    { label: 'Лучшие рецепты' }
   ];
 
   // Fetch settings from API
@@ -48,23 +47,14 @@ const Home: React.FC = () => {
     fetchSettings();
   }, []);
 
-  // Fetch recipes from API
+  // Fetch popular recipes
   useEffect(() => {
     const fetchRecipes = async () => {
       setLoading(true);
       setError(null);
       try {
-        // Map activeTab to sort parameter
-        let sortParam: string | undefined;
-        if (activeTab === 'new') {
-          sortParam = 'newest';
-        } else if (activeTab === 'popular') {
-          sortParam = 'popular';
-        } else if (activeTab === 'photo') {
-          sortParam = 'photo';
-        }
-
-        const response = await api.recipes.getAll(currentPage, recipesPerPage, sortParam);
+        // Use sort=popular to get recipes sorted by views
+        const response = await api.recipes.getAll(currentPage, recipesPerPage, 'popular');
         setRecipes(response.data);
         setTotalPages(response.pagination.totalPages);
       } catch (err) {
@@ -76,7 +66,7 @@ const Home: React.FC = () => {
     };
 
     fetchRecipes();
-  }, [currentPage, activeTab]);
+  }, [currentPage]);
 
   return (
     <>
@@ -86,50 +76,11 @@ const Home: React.FC = () => {
         <Sidebar sections={sidebarSections} />
 
         <main className="content">
-          <h1 className="page-title">Домашние рецепты приготовления блюд</h1>
+          <h1 className="page-title">Лучшие рецепты</h1>
           <p className="page-description">
-            Удобный поиск рецептов по продуктам, калориям, времени, типу блюда.
-            Свои кулинарные изыскания, пошаговые инструкции, фото готовых блюд.
+            Самые популярные рецепты по мнению наших читателей.
+            Проверенные временем блюда, которые пользуются наибольшим успехом.
           </p>
-
-          <div className="category-tabs">
-            <button
-              className={`category-tab ${activeTab === 'all' ? 'active' : ''}`}
-              onClick={() => {
-                setActiveTab('all');
-                setCurrentPage(1); // Reset to first page
-              }}
-            >
-              Все рецепты
-            </button>
-            <button
-              className={`category-tab ${activeTab === 'new' ? 'active' : ''}`}
-              onClick={() => {
-                setActiveTab('new');
-                setCurrentPage(1);
-              }}
-            >
-              Новые рецепты
-            </button>
-            <button
-              className={`category-tab ${activeTab === 'popular' ? 'active' : ''}`}
-              onClick={() => {
-                setActiveTab('popular');
-                setCurrentPage(1);
-              }}
-            >
-              Популярные
-            </button>
-            <button
-              className={`category-tab ${activeTab === 'photo' ? 'active' : ''}`}
-              onClick={() => {
-                setActiveTab('photo');
-                setCurrentPage(1);
-              }}
-            >
-              С фото
-            </button>
-          </div>
 
           {loading && (
             <div className="loading-message">Загрузка рецептов...</div>
@@ -144,19 +95,19 @@ const Home: React.FC = () => {
           )}
 
           {!loading && !error && recipes && recipes.length > 0 && (
-            <div className="recipes-grid">
-              {recipes.map((recipe) => (
-                <RecipeCard key={recipe.id} recipe={recipe} />
-              ))}
-            </div>
-          )}
+            <>
+              <div className="recipes-grid">
+                {recipes.map((recipe) => (
+                  <RecipeCard key={recipe.id} recipe={recipe} />
+                ))}
+              </div>
 
-          {!loading && recipes && recipes.length > 0 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-            />
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </>
           )}
         </main>
 
@@ -166,7 +117,6 @@ const Home: React.FC = () => {
             <Newsletter />
           </div>
 
-          {/* Показываем блок только если есть хотя бы одна ссылка */}
           {(socialLinks.youtube || socialLinks.instagram || socialLinks.telegram || socialLinks.tiktok) && (
             <div className="right-sidebar-section">
               <h3 className="right-sidebar-title">Мы в соцсетях</h3>
@@ -189,4 +139,4 @@ const Home: React.FC = () => {
   );
 };
 
-export default Home;
+export default BestRecipes;

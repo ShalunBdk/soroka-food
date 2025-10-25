@@ -1,9 +1,10 @@
 .breadcrumbs {
-  max-width: 1600px;
+  max-width: 1920px;
   margin: 1.5rem auto;
-  padding: 0 3%;
+  padding: 0 48px;
   font-size: 0.9rem;
   color: #666;
+  text-align: center;
 }
 
 .breadcrumbs a {
@@ -14,4 +15,16 @@
 
 .breadcrumbs a:hover {
   text-decoration: underline;
+}
+
+@media (max-width: 968px) {
+  .breadcrumbs {
+    padding: 0 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .breadcrumbs {
+    padding: 0 16px;
+  }
 }

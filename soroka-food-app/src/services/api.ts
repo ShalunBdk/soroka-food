@@ -129,8 +129,9 @@ export const api = {
 
   // ========== Recipes API (Public) ==========
   recipes: {
-    async getAll(page = 1, limit = 9): Promise<{ data: any[]; pagination: any }> {
-      return apiRequest(`/recipes?page=${page}&limit=${limit}`);
+    async getAll(page = 1, limit = 9, sort?: string): Promise<{ data: any[]; pagination: any }> {
+      const sortParam = sort ? `&sort=${sort}` : '';
+      return apiRequest(`/recipes?page=${page}&limit=${limit}${sortParam}`);
     },
 
     async getById(id: number): Promise<any> {
@@ -139,6 +140,18 @@ export const api = {
 
     async getByCategory(slug: string, page = 1, limit = 9): Promise<{ data: any[]; pagination: any }> {
       return apiRequest(`/categories/${slug}/recipes?page=${page}&limit=${limit}`);
+    },
+
+    async getByCuisine(type: string, page = 1, limit = 9): Promise<{ cuisine: any; recipes: any[]; pagination: any }> {
+      return apiRequest(`/recipes/cuisines/${type}?page=${page}&limit=${limit}`);
+    },
+
+    async search(query: string, page = 1, limit = 9): Promise<{ query: string; data: any[]; pagination: any }> {
+      return apiRequest(`/recipes/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
+    },
+
+    async getStats(): Promise<{ recipesCount: number; commentsCount: number; usersCount: number }> {
+      return apiRequest('/recipes/stats');
     }
   },
 
@@ -177,6 +190,13 @@ export const api = {
   settings: {
     async getPublic(): Promise<any> {
       return apiRequest('/settings');
+    }
+  },
+
+  // ========== Static Pages API (Public) ==========
+  staticPages: {
+    async getBySlug(slug: string): Promise<any> {
+      return apiRequest(`/static-pages/${slug}`);
     }
   },
 
@@ -283,6 +303,24 @@ export const api = {
 
       async update(data: any): Promise<any> {
         return apiRequest('/admin/settings', {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+      }
+    },
+
+    // Admin Static Pages
+    staticPages: {
+      async getAll(): Promise<any[]> {
+        return apiRequest('/admin/static-pages');
+      },
+
+      async getById(id: number): Promise<any> {
+        return apiRequest(`/admin/static-pages/${id}`);
+      },
+
+      async update(id: number, data: { title: string; content: string }): Promise<any> {
+        return apiRequest(`/admin/static-pages/${id}`, {
           method: 'PUT',
           body: JSON.stringify(data),
         });

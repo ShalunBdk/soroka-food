@@ -28,6 +28,9 @@ body {
   padding: 1.5rem;
   border: 1px solid #ddd;
   height: fit-content;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .sidebar-title {
@@ -61,7 +64,7 @@ body {
   text-decoration: underline;
 }
 
-@media (max-width: 968px) {
+@media (max-width: 1600px) {
   .sidebar {
     display: none;
   }

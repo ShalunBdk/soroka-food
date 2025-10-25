@@ -121,3 +121,12 @@ export interface CommentWithRecipe extends Comment {
   recipeId: number;
   status: 'approved' | 'pending' | 'spam';
 }
+
+export interface StaticPage {
+  id: number;
+  slug: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -150,3 +150,15 @@ model SiteSettings {
 
   @@map("site_settings")
 }
+
+// Static pages (About, Contact, Rules, Advertising)
+model StaticPage {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique // about, contact, rules, advertising
+  title     String
+  content   String   @db.Text // HTML or plain text content
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("static_pages")
+}
