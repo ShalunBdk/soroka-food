@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
@@ -25,7 +24,8 @@ import AdminNewsletter from './pages/admin/AdminNewsletter';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminStaticPages from './pages/admin/AdminStaticPages';
 
-import api, { tokenManager } from './services/api';
+import { tokenManager } from './services/api';
+import { SettingsProvider } from './contexts/SettingsContext';
 import './App.css';
 
 // Protected route component
@@ -35,26 +35,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  // Load site settings and update document title
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const settings = await api.settings.getPublic();
-        if (settings?.siteName) {
-          document.title = settings.siteName;
-        }
-      } catch (err) {
-        console.error('Error loading site settings for title:', err);
-        // Keep default title if settings fail to load
-      }
-    };
-
-    loadSettings();
-  }, []);
-
   return (
-    <Router>
-      <div className="app">
+    <SettingsProvider>
+      <Router>
+        <div className="app">
         <Routes>
           {/* Public routes */}
           <Route path="/" element={
@@ -205,6 +189,7 @@ function App() {
         </Routes>
       </div>
     </Router>
+    </SettingsProvider>
   );
 }
 

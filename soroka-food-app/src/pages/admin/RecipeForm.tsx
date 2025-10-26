@@ -1,4 +1,5 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { getImageUrl } from '../../utils/image';
@@ -108,17 +109,6 @@ function RecipeForm() {
     const updated = [...instructions];
     updated[index].text = value;
     setInstructions(updated);
-  };
-
-  const handleAddImageToStep = (stepIndex: number, imageUrl: string) => {
-    const updated = [...instructions];
-    if (!updated[stepIndex].images) {
-      updated[stepIndex].images = [];
-    }
-    if (updated[stepIndex].images!.length < 5) {
-      updated[stepIndex].images!.push(imageUrl);
-      setInstructions(updated);
-    }
   };
 
   const handleRemoveImageFromStep = (stepIndex: number, imageIndex: number) => {

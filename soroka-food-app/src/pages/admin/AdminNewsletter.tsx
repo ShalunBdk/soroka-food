@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
-import type { NewsletterSubscriber } from '../../types';
 import './AdminCommon.css';
 
 function AdminNewsletter() {

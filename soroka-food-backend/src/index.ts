@@ -51,10 +51,29 @@ app.use('/api/static-pages', staticPageRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 
-// 404 handler
-app.use((req: Request, res: Response) => {
-  res.status(404).json({ error: 'Route not found' });
-});
+// Serve frontend static files in production
+if (process.env.NODE_ENV === 'production') {
+  const frontendPath = path.join(__dirname, '../../soroka-food-app/dist');
+
+  // Serve static files
+  app.use(express.static(frontendPath));
+
+  // SPA fallback - serve index.html for all non-API routes
+  app.use((req: Request, res: Response) => {
+    // If request is for API route and not found, return 404 JSON
+    if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
+      res.status(404).json({ error: 'Route not found' });
+    } else {
+      // For all other routes, serve index.html (SPA fallback)
+      res.sendFile(path.join(frontendPath, 'index.html'));
+    }
+  });
+} else {
+  // 404 handler for dev mode (API only)
+  app.use((req: Request, res: Response) => {
+    res.status(404).json({ error: 'Route not found' });
+  });
+}
 
 // Global error handler
 app.use(errorHandler);

@@ -13,6 +13,7 @@
     "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
     "start:backend": "cd soroka-food-backend && npm start",
     "start:frontend": "cd soroka-food-app && npm run preview",
+    "start:prod": "cd soroka-food-backend && cross-env NODE_ENV=production npm start",
     "prisma:migrate": "cd soroka-food-backend && npm run prisma:migrate",
     "prisma:seed": "cd soroka-food-backend && npm run prisma:seed",
     "prisma:studio": "cd soroka-food-backend && npm run prisma:studio"
@@ -26,6 +27,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "cross-env": "^10.1.0"
   }
 }

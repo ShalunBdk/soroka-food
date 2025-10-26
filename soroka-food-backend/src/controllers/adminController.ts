@@ -479,11 +479,13 @@ export const updateSettings = async (req: Request, res: Response): Promise<void>
     seo
   } = req.body;
 
+  // Get current settings to preserve fields that aren't being updated
+  const currentSettings = await prisma.siteSettings.findUnique({ where: { id: 1 } });
+
   // Flatten nested structure for database
-  const flatData = {
+  const flatData: any = {
     siteName,
     siteDescription,
-    logo,
     youtube: socialLinks?.youtube || '',
     instagram: socialLinks?.instagram || '',
     telegram: socialLinks?.telegram || '',
@@ -492,6 +494,15 @@ export const updateSettings = async (req: Request, res: Response): Promise<void>
     metaDescription: seo?.metaDescription || '',
     metaKeywords: seo?.metaKeywords || ''
   };
+
+  // Only update logo if a new value is provided (not empty string)
+  if (logo !== undefined && logo !== null && logo !== '') {
+    flatData.logo = logo;
+  } else if (currentSettings?.logo) {
+    flatData.logo = currentSettings.logo;
+  } else {
+    flatData.logo = '';
+  }
 
   const settings = await prisma.siteSettings.upsert({
     where: { id: 1 },

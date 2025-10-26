@@ -3,13 +3,18 @@ const API_BASE_URL = 'http://localhost:3000/api';
 
 // API Error class
 export class ApiError extends Error {
+  status: number;
+  data?: any;
+
   constructor(
     message: string,
-    public status: number,
-    public data?: any
+    status: number,
+    data?: any
   ) {
     super(message);
     this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
   }
 }
 
@@ -39,9 +44,9 @@ async function apiRequest<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers,
+    ...options.headers as Record<string, string>,
   };
 
   // Add authorization token if available
@@ -81,7 +86,7 @@ async function apiRequest<T>(
       return null as T;
     }
 
-    return hasJson ? await response.json() : null;
+    return hasJson ? await response.json() : null as T;
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;
@@ -138,7 +143,7 @@ export const api = {
       return apiRequest(`/recipes/${id}`);
     },
 
-    async getByCategory(slug: string, page = 1, limit = 9): Promise<{ data: any[]; pagination: any }> {
+    async getByCategory(slug: string, page = 1, limit = 9): Promise<{ category: any; recipes: any[]; pagination: any }> {
       return apiRequest(`/categories/${slug}/recipes?page=${page}&limit=${limit}`);
     },
 

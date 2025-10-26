@@ -134,6 +134,7 @@ model SiteSettings {
   siteName        String   @default("Soroka Food")
   siteDescription String?
   logo            String?
+  favicon         String?
 
   // Social links
   youtube         String?

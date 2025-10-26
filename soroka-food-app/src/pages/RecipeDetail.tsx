@@ -3,12 +3,14 @@ import { useParams, Link } from 'react-router-dom';
 import Breadcrumbs from '../components/Breadcrumbs/Breadcrumbs';
 import api from '../services/api';
 import { getImageUrl } from '../utils/image';
+import { useSettings } from '../contexts/SettingsContext';
 import type { RecipeDetail as RecipeDetailType, Comment } from '../types';
 import '../styles/RecipeDetail.css';
 
 const RecipeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const recipeId = parseInt(id || '1');
+  const { settings } = useSettings();
 
   const [recipe, setRecipe] = useState<RecipeDetailType | null>(null);
   const [recipeComments, setRecipeComments] = useState<Comment[]>([]);
@@ -48,6 +50,21 @@ const RecipeDetail: React.FC = () => {
 
     fetchData();
   }, [recipeId]);
+
+  // Update document title when recipe is loaded
+  useEffect(() => {
+    const originalTitle = document.title;
+
+    if (recipe?.title && settings) {
+      const siteName = settings.siteName || 'Soroka Food';
+      document.title = `${recipe.title} - ${siteName}`;
+    }
+
+    // Restore original title when component unmounts
+    return () => {
+      document.title = originalTitle;
+    };
+  }, [recipe, settings]);
 
   if (loading) {
     return <div className="loading-message">Загрузка рецепта...</div>;

@@ -8,6 +8,7 @@ import Newsletter from '../components/Newsletter/Newsletter';
 import SocialLinks from '../components/SocialLinks/SocialLinks';
 import SiteStats from '../components/SiteStats/SiteStats';
 import { useSidebarData } from '../hooks/useSidebarData';
+import { useSettings } from '../contexts/SettingsContext';
 import api from '../services/api';
 import type { Recipe } from '../types/index';
 import '../styles/CategoryPage.css';
@@ -27,12 +28,7 @@ const CategoryPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [socialLinks, setSocialLinks] = useState<{
-    youtube?: string;
-    instagram?: string;
-    telegram?: string;
-    tiktok?: string;
-  }>({});
+  const { settings } = useSettings();
   const recipesPerPage = 9;
   const { sidebarSections } = useSidebarData();
 
@@ -43,22 +39,6 @@ const CategoryPage: React.FC = () => {
         { label: category.name }
       ]
     : [{ label: 'Главная', url: '/' }];
-
-  // Fetch settings from API
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const settings = await api.settings.getPublic();
-        if (settings && settings.socialLinks) {
-          setSocialLinks(settings.socialLinks);
-        }
-      } catch (err) {
-        console.error('Error fetching settings:', err);
-      }
-    };
-
-    fetchSettings();
-  }, []);
 
   // Fetch recipes by category
   useEffect(() => {
@@ -75,10 +55,6 @@ const CategoryPage: React.FC = () => {
           setRecipes(response.recipes);
           setCategory(response.category);
           setTotalPages(response.pagination.totalPages);
-        } else if (response && Array.isArray(response.data)) {
-          // Fallback to old format if needed
-          setRecipes(response.data);
-          setTotalPages(response.pagination?.totalPages || 1);
         } else {
           setError('Неверный формат данных');
         }
@@ -149,14 +125,14 @@ const CategoryPage: React.FC = () => {
             <Newsletter />
           </div>
 
-          {(socialLinks.youtube || socialLinks.instagram || socialLinks.telegram || socialLinks.tiktok) && (
+          {settings?.socialLinks && (settings.socialLinks.youtube || settings.socialLinks.instagram || settings.socialLinks.telegram || settings.socialLinks.tiktok) && (
             <div className="right-sidebar-section">
               <h3 className="right-sidebar-title">Мы в соцсетях</h3>
               <SocialLinks
-                youtube={socialLinks.youtube}
-                instagram={socialLinks.instagram}
-                telegram={socialLinks.telegram}
-                tiktok={socialLinks.tiktok}
+                youtube={settings.socialLinks.youtube}
+                instagram={settings.socialLinks.instagram}
+                telegram={settings.socialLinks.telegram}
+                tiktok={settings.socialLinks.tiktok}
               />
             </div>
           )}

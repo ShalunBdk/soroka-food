@@ -60,8 +60,8 @@ router.get('/settings', asyncHandler(getSettings));
 router.put('/settings', asyncHandler(updateSettings));
 
 // Static pages management
-router.get('/static-pages', asyncHandler(getAllStaticPages));
-router.get('/static-pages/:id', asyncHandler(getStaticPageById));
-router.put('/static-pages/:id', asyncHandler(updateStaticPage));
+router.get('/static-pages', getAllStaticPages);
+router.get('/static-pages/:id', getStaticPageById);
+router.put('/static-pages/:id', updateStaticPage);
 
 export default router;

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
-import type { CommentWithRecipe } from '../../types';
 import './AdminCommon.css';
 
 function AdminComments() {

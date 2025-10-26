@@ -15,13 +15,16 @@ The project is structured as a monorepo with two main directories: `soroka-food-
 ### Unified Commands (from project root)
 
 ```bash
+# Development mode (two servers)
 npm run dev              # Start BOTH frontend and backend (recommended)
 npm run dev:frontend     # Start only frontend (http://localhost:5173)
 npm run dev:backend      # Start only backend (http://localhost:3000)
 
+# Production mode (single server)
 npm run build            # Build both frontend and backend
-npm run start            # Run production builds of both
+npm run start:prod       # Start production server (backend serves frontend on http://localhost:3000)
 
+# Dependencies
 npm run install:all      # Install all dependencies (root, frontend, backend)
 
 # Database commands
@@ -241,6 +244,8 @@ Recipes store complex data as JSON in PostgreSQL:
 - `hooks/` - Custom React hooks
   - `useCategories.ts` - Fetches categories from API
   - `useSidebarData.ts` - Generates dynamic sidebar sections
+- `contexts/` - React Context providers
+  - `SettingsContext.tsx` - Global settings state (loads once, prevents redundant API calls)
 - `services/` - API client (api.ts) with all backend endpoints
 - `utils/` - Helper functions (image.ts for image URL handling)
 - `styles/` - Page-specific CSS
@@ -459,10 +464,25 @@ api.upload.stepImages(files)                 // Upload step images
 
 ## Development Workflow
 
-**Running the App**:
+**Development Mode (Two Servers)**:
 ```bash
 npm run dev  # From project root - starts both frontend and backend
 ```
+- Frontend runs on `http://localhost:5173` (Vite dev server)
+- Backend runs on `http://localhost:3000` (Express API server)
+- Hot-reload enabled for both
+- CORS configured for cross-origin requests
+
+**Production Mode (Single Server)**:
+```bash
+npm run build       # Build both frontend and backend
+npm run start:prod  # Start production server
+```
+- Backend runs on `http://localhost:3000`
+- Backend serves built frontend static files from `soroka-food-app/dist`
+- All routes on single port (no CORS needed)
+- SPA fallback: non-API routes serve `index.html`
+- Set `NODE_ENV=production` in backend `.env` for production optimizations
 
 **Database Changes**:
 1. Edit `soroka-food-backend/prisma/schema.prisma`
@@ -499,6 +519,8 @@ SorokaFood/
 │       ├── hooks/           # Custom React hooks
 │       │   ├── useCategories.ts
 │       │   └── useSidebarData.ts
+│       ├── contexts/        # React Context providers
+│       │   └── SettingsContext.tsx  # Global settings state
 │       ├── services/        # API client
 │       ├── utils/           # Helper functions
 │       ├── styles/          # CSS files
@@ -522,6 +544,38 @@ SorokaFood/
 ├── QUICKSTART.md           # Quick setup guide
 └── README.md               # Full documentation
 ```
+
+## Performance Optimizations
+
+### Settings Context (Global State)
+To avoid redundant API calls, site settings are loaded once and cached globally:
+
+**Implementation** (`soroka-food-app/src/contexts/SettingsContext.tsx`):
+```typescript
+import { SettingsProvider } from './contexts/SettingsContext';
+
+// In App.tsx
+<SettingsProvider>
+  <Router>
+    {/* App content */}
+  </Router>
+</SettingsProvider>
+
+// In any component
+import { useSettings } from '../contexts/SettingsContext';
+const { settings, loading } = useSettings();
+```
+
+**Benefits**:
+- Settings loaded once on app mount
+- All components share the same settings instance
+- No redundant API calls when navigating between pages
+- Automatic document title update from settings
+
+**Components using SettingsContext**:
+- Header (logo and site name)
+- RecipeDetail (dynamic title: "Recipe - Site Name")
+- Home, CategoryPage, CuisinePage, BestRecipes, SearchResults (social links in footer)
 
 ## Important Notes
 
@@ -589,6 +643,9 @@ const { categories, loading, error } = useCategories();
 
 // Generate dynamic sidebar sections
 const { sidebarSections } = useSidebarData();
+
+// Access global settings state (from SettingsContext)
+const { settings, loading } = useSettings();
 ```
 
 ### Backend Enhancements
@@ -626,7 +683,7 @@ const { sidebarSections } = useSidebarData();
 - **Header component** now dynamically loads and displays site settings:
   - Logo image (if uploaded by admin) positioned left
   - Site name (from settings) positioned right of logo
-  - Both loaded from `/api/settings` endpoint
+  - Both loaded from `/api/settings` endpoint via SettingsContext
   - Automatic fallback to default values if API fails
 - **Typography enhancement**:
   - Integrated Google Fonts Montserrat (weights 300-700)
@@ -634,9 +691,25 @@ const { sidebarSections } = useSidebarData();
   - Applied professional typography settings (kerning, optical sizing, variants)
 - **Dynamic document title**:
   - Browser tab title automatically updates from site settings
-  - Implemented in `App.tsx` via `useEffect` hook
+  - Implemented in SettingsContext (loads once)
   - Fallback to "Soroka Food" if settings unavailable
 - **Admin control**:
   - Admin can upload logo and set site name via `/admin/settings`
   - Changes instantly reflected across all pages
   - Logo preview in admin settings panel
+
+**Settings Performance Optimization** (2025-01-26):
+- **Created SettingsContext** to eliminate redundant API calls
+- Settings now loaded once on app mount instead of on every page navigation
+- Reduced from 8+ API calls per navigation to 1 call per session
+- All components (Header, Footer, RecipeDetail, etc.) now use `useSettings()` hook
+- Automatic document title management in context provider
+- Improved page load performance and reduced server load
+
+**Production Deployment Setup** (2025-01-26):
+- **Backend serves frontend** in production mode via Express static middleware
+- Single-server architecture: backend on port 3000 serves both API and frontend
+- SPA fallback routing: all non-API routes serve `index.html`
+- Cross-env package added for Windows compatibility with `NODE_ENV`
+- Command: `npm run start:prod` builds and runs everything on one port
+- Express 5 compatibility fix: replaced `app.get('*')` with `app.use()` middleware

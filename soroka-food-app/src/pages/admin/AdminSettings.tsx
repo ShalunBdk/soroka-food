@@ -1,4 +1,5 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
 import api from '../../services/api';
 import { getImageUrl } from '../../utils/image';
 import type { SiteSettings } from '../../types';
@@ -86,6 +87,13 @@ function AdminSettings() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    // Prevent saving while loading to avoid overwriting with initial state
+    if (loading) {
+      alert('Подождите, настройки загружаются...');
+      return;
+    }
+
     setSaving(true);
     try {
       await api.admin.settings.update(settings);

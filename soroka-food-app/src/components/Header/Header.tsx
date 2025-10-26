@@ -1,34 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import api from '../../services/api';
 import { getImageUrl } from '../../utils/image';
-import type { SiteSettings } from '../../types';
+import { useSettings } from '../../contexts/SettingsContext';
 import './Header.css';
 
 const Header: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const { settings } = useSettings();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
-    try {
-      const data = await api.settings.getPublic();
-      setSettings(data);
-    } catch (err) {
-      console.error('Error fetching site settings:', err);
-      // Use default values if API fails
-      setSettings({
-        siteName: 'Soroka Food',
-        siteDescription: '',
-        socialLinks: {},
-        seo: {}
-      });
-    }
-  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
