@@ -70,6 +70,8 @@ npm run prisma:seed      # Seed database
 - JWT authentication with bcrypt password hashing
 - Multer for file uploads (images stored in `public/uploads/`)
 - TypeScript throughout
+- **Security**: Helmet, CORS, Rate Limiting, Zod validation, Sharp image validation
+- **HTML Sanitization**: DOMPurify on frontend for XSS protection
 
 ### Frontend Architecture
 
@@ -255,9 +257,10 @@ Recipes store complex data as JSON in PostgreSQL:
 **Backend** (`soroka-food-backend/src/`):
 - `controllers/` - Request handlers (authController, recipeController, adminController, staticPageController, etc.)
 - `routes/` - Express routers (authRoutes, recipeRoutes, adminRoutes, staticPageRoutes, uploadRoutes, etc.)
-- `middleware/` - auth, errorHandler, upload (multer)
+- `middleware/` - auth, errorHandler, upload (multer), rateLimiter, validation, imageValidation
+- `validators/` - Zod schemas (auth, recipe, comment)
 - `config/` - database.ts (Prisma client)
-- `utils/` - jwt.ts, password.ts (bcrypt helpers)
+- `utils/` - jwt.ts, password.ts (bcrypt helpers), imageProcessor.ts (Sharp)
 
 ## Styling Approach
 
@@ -598,6 +601,237 @@ const { settings, loading } = useSettings();
 - Max upload size: 5MB
 - Upload endpoints protected with authentication
 
+## Security & Production-Ready Features
+
+### Security Middleware
+
+**Helmet** (`soroka-food-backend/src/index.ts`):
+- Adds security HTTP headers (X-Content-Type-Options, X-Frame-Options, etc.)
+- Content Security Policy (CSP) configured for Google Fonts and external images
+- Cross-Origin Embedder Policy disabled to allow loading external images
+
+**CORS Configuration**:
+- Environment-based allowed origins via `ALLOWED_ORIGINS` in `.env`
+- Development: `http://localhost:5173`
+- Production: Set your domain(s) in `.env` (comma-separated)
+- Credentials enabled for cookie/auth support
+- Specific methods and headers allowed
+
+**Rate Limiting** (`soroka-food-backend/src/middleware/rateLimiter.ts`):
+Rate limiters protect against abuse while allowing normal usage:
+
+- **apiLimiter** (General API): 1000 requests per 15 minutes (~1 req/sec average)
+  - Applied to all `/api/*` routes
+  - Liberal limit for normal browsing with multiple API calls per page
+
+- **loginLimiter** (Brute-force protection): 5 attempts per 15 minutes
+  - Applied to `POST /api/auth/login`
+  - Skips successful requests (doesn't count valid logins)
+
+- **registerLimiter** (Account creation): 3 registrations per hour
+  - Applied to `POST /api/auth/register` (currently disabled in production)
+
+- **uploadLimiter** (File uploads): 50 uploads per hour
+  - Applied to all `/api/upload/*` routes
+
+- **commentLimiter** (Spam protection): 10 comments per 15 minutes
+  - Applied to `POST /api/comments`
+
+All rate limiters use IP-based tracking and return standard HTTP headers (RateLimit-*).
+
+### Input Validation with Zod
+
+**Validation Middleware** (`soroka-food-backend/src/middleware/validation.ts`):
+```typescript
+import { validate } from '../middleware/validation';
+import { loginSchema } from '../validators/auth.validator';
+
+router.post('/login', validate(loginSchema), asyncHandler(login));
+```
+
+**Validators** (`soroka-food-backend/src/validators/`):
+- **auth.validator.ts**: Login/register validation
+  - Username: 3-50 chars, alphanumeric + underscore
+  - Password: min 8 chars, requires uppercase, lowercase, and number
+  - Email: valid email format
+
+- **recipe.validator.ts**: Recipe creation/update validation
+  - Title: 3-255 chars
+  - Description: 10-1000 chars
+  - Cooking time: positive integer, max 1440 minutes (24 hours)
+  - Servings: positive integer, max 100
+  - Ingredients: min 1, each with name and amount
+  - Instructions: min 1 step, ordered by stepNumber
+  - Status: enum ('PUBLISHED' | 'DRAFT')
+
+- **comment.validator.ts**: Comment submission validation
+  - Author: 2-100 chars
+  - Email: valid format
+  - Rating: 1-5 integer
+  - Text: 10-1000 chars
+
+Validation errors return 400 status with detailed field-level error messages.
+
+### Image Validation with Sharp
+
+**Image Validation Middleware** (`soroka-food-backend/src/middleware/imageValidation.ts`):
+
+Validates uploaded images using Sharp library:
+- **Format check**: Only jpeg, jpg, png, webp allowed
+- **Dimension check**: Max 5000x5000 pixels
+- **Integrity check**: Verifies file is valid image (not corrupted)
+- **Auto-cleanup**: Deletes invalid files immediately
+- **Multiple files support**: `validateMultipleImages()` for batch uploads
+
+Applied to upload routes:
+```typescript
+router.post('/recipe-image', uploadLimiter, uploadSingle, validateImage, asyncHandler(...));
+router.post('/step-images', uploadLimiter, uploadMultiple, validateMultipleImages, asyncHandler(...));
+```
+
+**Image Processing Utils** (`soroka-food-backend/src/utils/imageProcessor.ts`):
+Ready for future optimization features:
+- `optimizeImage()`: Resize and compress images (max width, quality control)
+- `convertToWebP()`: Convert to WebP format for better compression
+- `createThumbnail()`: Generate thumbnails with custom dimensions
+
+### HTML Sanitization (XSS Protection)
+
+**Frontend Sanitization** (`soroka-food-app/src/utils/sanitize.ts`):
+
+DOMPurify library sanitizes all user-generated HTML content:
+```typescript
+import { sanitizeHTML } from '../utils/sanitize';
+
+<div dangerouslySetInnerHTML={{ __html: sanitizeHTML(page.content) }} />
+```
+
+**Allowed HTML tags**: p, br, strong, em, u, h2, h3, ul, ol, li, a
+**Allowed attributes**: href, target, rel
+**Data attributes**: Disabled for security
+
+Applied to:
+- Static pages (About, Contact, Rules, Advertising)
+- All admin-editable HTML content
+- User comments (future enhancement)
+
+Prevents XSS attacks by stripping dangerous HTML/JS from user input.
+
+### Environment Variables
+
+**Backend** (`soroka-food-backend/.env`):
+```env
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/soroka-food
+
+# JWT Authentication
+JWT_SECRET=your-cryptographically-strong-secret-here  # REQUIRED (no fallback)
+JWT_EXPIRES_IN=7d
+
+# Server
+PORT=3000
+NODE_ENV=development  # or 'production'
+
+# CORS (comma-separated domains)
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+
+# File Upload
+MAX_FILE_SIZE=5242880  # 5MB in bytes
+```
+
+**Frontend** (`soroka-food-app/.env` - optional):
+```env
+# API URL for development
+VITE_API_URL=http://localhost:3000/api
+
+# Environment
+VITE_APP_ENV=development
+```
+
+**Important Security Notes**:
+- `.env.example` files provided for reference (no real secrets)
+- JWT_SECRET must be set (no fallback in code)
+- Generate strong JWT secret: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
+- Never commit `.env` files to git
+- URL-encode special characters in DATABASE_URL passwords
+
+### Production Configuration
+
+**Environment-based Behavior**:
+
+The application detects `NODE_ENV=production` and adjusts:
+1. **Frontend serving**: Backend serves built frontend from `soroka-food-app/dist`
+2. **SPA fallback**: All non-API routes serve `index.html` for client-side routing
+3. **CORS**: Use production domains in `ALLOWED_ORIGINS`
+4. **Error messages**: Less verbose in production
+5. **Logging**: Can be enhanced with winston (future)
+
+**Production Server Start**:
+```bash
+# Build both frontend and backend
+npm run build
+
+# Start production server (single port 3000)
+npm run start:prod
+```
+
+**Production Checklist**:
+- [ ] Set strong `JWT_SECRET` (64+ char random string)
+- [ ] Configure `ALLOWED_ORIGINS` with production domain(s)
+- [ ] Set `NODE_ENV=production` in backend `.env`
+- [ ] Verify `.env` files are in `.gitignore`
+- [ ] Test production build locally before deploying
+- [ ] Disable public registration endpoint (already done)
+- [ ] Configure database connection for production
+- [ ] Set up SSL/HTTPS (recommended via reverse proxy)
+
+**Server Instance Fix**:
+Production server keeps running by storing HTTP server instance:
+```typescript
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
+```
+This prevents the Node.js process from exiting after startup.
+
+### Backend File Structure (Security-related)
+
+```
+soroka-food-backend/src/
+├── middleware/
+│   ├── auth.ts              # JWT authentication + role checks
+│   ├── errorHandler.ts      # Global error handling + AppError class
+│   ├── rateLimiter.ts       # Rate limiting configurations
+│   ├── validation.ts        # Zod validation middleware
+│   ├── imageValidation.ts   # Sharp image validation
+│   └── upload.ts            # Multer file upload config
+├── validators/
+│   ├── auth.validator.ts    # Login/register schemas
+│   ├── recipe.validator.ts  # Recipe CRUD schemas
+│   └── comment.validator.ts # Comment submission schema
+├── utils/
+│   ├── jwt.ts               # JWT sign/verify helpers
+│   ├── password.ts          # bcrypt hash/compare
+│   └── imageProcessor.ts    # Sharp image optimization
+└── routes/
+    ├── authRoutes.ts        # Login + register (register disabled)
+    ├── adminRoutes.ts       # Protected admin endpoints
+    └── uploadRoutes.ts      # Protected upload endpoints
+```
+
+### Frontend File Structure (Security-related)
+
+```
+soroka-food-app/src/
+├── utils/
+│   ├── sanitize.ts          # DOMPurify HTML sanitization
+│   └── image.ts             # Image URL helper
+├── contexts/
+│   └── SettingsContext.tsx  # Centralized settings (performance)
+└── services/
+    └── api.ts               # API client with token management
+```
+
 ## Common Issues
 
 **PostgreSQL Connection**: Ensure PostgreSQL is running and credentials in `.env` are correct.
@@ -713,3 +947,31 @@ const { settings, loading } = useSettings();
 - Cross-env package added for Windows compatibility with `NODE_ENV`
 - Command: `npm run start:prod` builds and runs everything on one port
 - Express 5 compatibility fix: replaced `app.get('*')` with `app.use()` middleware
+- Production server fix: Server instance stored to prevent process exit
+
+**Security & Production-Ready Enhancements** (2025-10-26):
+- **Helmet**: Security HTTP headers with CSP configuration
+- **CORS**: Environment-based allowed origins configuration
+- **Rate Limiting**: IP-based rate limiting for all endpoints
+  - General API: 1000 req/15min (adjusted from 100 for usability)
+  - Login: 5 attempts/15min (brute-force protection)
+  - Register: 3 accounts/hour
+  - Uploads: 50 files/hour
+  - Comments: 10 submissions/15min
+- **Input Validation**: Zod schemas for all user inputs
+  - Auth validation (username, email, password strength)
+  - Recipe validation (title, description, ingredients, instructions)
+  - Comment validation (author, email, rating, text)
+- **Image Validation**: Sharp library validates all uploads
+  - Format check (jpeg, jpg, png, webp only)
+  - Dimension check (max 5000x5000)
+  - Integrity verification
+  - Auto-cleanup of invalid files
+- **HTML Sanitization**: DOMPurify on frontend prevents XSS
+  - Applied to all static pages
+  - Configurable allowed tags and attributes
+- **Environment Variables**: `.env.example` files for both frontend/backend
+- **JWT Security**: No fallback secret, requires strong JWT_SECRET
+- **Admin Registration**: Disabled public registration endpoint for production
+
+All security features tested and production-ready. See `PRODUCTION_PLAN.md` for detailed implementation tracking (10/37 tasks completed, 27% progress).

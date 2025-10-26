@@ -23,8 +23,12 @@ export const authenticateToken = (
     return;
   }
 
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET is not defined in environment variables');
+  }
+
   try {
-    const secret = process.env.JWT_SECRET || 'fallback-secret';
     const decoded = jwt.verify(token, secret) as {
       id: number;
       username: string;

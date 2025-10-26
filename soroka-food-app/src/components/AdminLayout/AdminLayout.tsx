@@ -18,6 +18,7 @@ function AdminLayout({ children }: AdminLayoutProps) {
     { path: '/admin', label: 'Дашборд', icon: '📊' },
     { path: '/admin/recipes', label: 'Рецепты', icon: '📝' },
     { path: '/admin/categories', label: 'Категории', icon: '🗂️' },
+    { path: '/admin/tags', label: 'Теги', icon: '🏷️' },
     { path: '/admin/comments', label: 'Комментарии', icon: '💬' },
     { path: '/admin/newsletter', label: 'Подписчики', icon: '✉️' },
     { path: '/admin/static-pages', label: 'Статические страницы', icon: '📄' },

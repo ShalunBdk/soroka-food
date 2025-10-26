@@ -113,6 +113,51 @@ const RecipeDetail: React.FC = () => {
     }
   };
 
+  // Share handlers
+  const handleShareVK = () => {
+    const url = window.location.href;
+    const title = recipe?.title || '';
+    const shareUrl = `https://vk.com/share.php?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`;
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+  };
+
+  const handleShareTelegram = () => {
+    const url = window.location.href;
+    const text = recipe?.title || '';
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+  };
+
+  const handleShareWhatsApp = () => {
+    const url = window.location.href;
+    const text = `${recipe?.title || ''} - ${url}`;
+    const shareUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+  };
+
+  const handleCopyLink = async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      alert('Ссылка скопирована в буфер обмена!');
+    } catch (err) {
+      // Fallback для старых браузеров
+      const textArea = document.createElement('textarea');
+      textArea.value = url;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        alert('Ссылка скопирована в буфер обмена!');
+      } catch (err) {
+        alert('Не удалось скопировать ссылку');
+      }
+      document.body.removeChild(textArea);
+    }
+  };
+
   return (
     <>
       <Breadcrumbs items={breadcrumbItems} />
@@ -149,10 +194,10 @@ const RecipeDetail: React.FC = () => {
           <div className="share-section">
             <div className="share-title">Поделиться рецептом:</div>
             <div className="share-buttons">
-              <button className="share-btn">ВКонтакте</button>
-              <button className="share-btn">Telegram</button>
-              <button className="share-btn">WhatsApp</button>
-              <button className="share-btn">Копировать ссылку</button>
+              <button className="share-btn" onClick={handleShareVK}>ВКонтакте</button>
+              <button className="share-btn" onClick={handleShareTelegram}>Telegram</button>
+              <button className="share-btn" onClick={handleShareWhatsApp}>WhatsApp</button>
+              <button className="share-btn" onClick={handleCopyLink}>Копировать ссылку</button>
             </div>
           </div>
 

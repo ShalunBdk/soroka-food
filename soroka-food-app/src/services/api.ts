@@ -266,6 +266,26 @@ export const api = {
       }
     },
 
+    // Admin Tags
+    tags: {
+      async getAll(): Promise<Array<{ name: string; count: number }>> {
+        return apiRequest('/admin/tags');
+      },
+
+      async rename(oldName: string, newName: string): Promise<any> {
+        return apiRequest('/admin/tags/rename', {
+          method: 'PUT',
+          body: JSON.stringify({ oldName, newName }),
+        });
+      },
+
+      async delete(name: string): Promise<void> {
+        return apiRequest(`/admin/tags/${encodeURIComponent(name)}`, {
+          method: 'DELETE',
+        });
+      }
+    },
+
     // Admin Comments
     comments: {
       async getAll(status?: 'APPROVED' | 'PENDING' | 'SPAM'): Promise<any[]> {

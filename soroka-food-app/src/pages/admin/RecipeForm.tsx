@@ -15,6 +15,8 @@ function RecipeForm() {
   const [uploading, setUploading] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [newTagInput, setNewTagInput] = useState('');
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -38,15 +40,24 @@ function RecipeForm() {
   const [fat, setFat] = useState(10);
   const [carbs, setCarbs] = useState(25);
 
-  const availableTags = ['Обед', 'Ужин', 'Завтрак', 'Десерт', 'Быстро', 'Бюджетно'];
-
-  // Fetch categories and recipe data
+  // Fetch categories, tags, and recipe data
   useEffect(() => {
     const fetchData = async () => {
       try {
         // Fetch categories
         const categoriesData = await api.categories.getAll();
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+
+        // Fetch existing tags
+        try {
+          const tagsData = await api.admin.tags.getAll();
+          const tagNames = tagsData.map((t: any) => t.name);
+          setAvailableTags(tagNames);
+        } catch (err) {
+          console.error('Error fetching tags:', err);
+          // Set default tags if API fails
+          setAvailableTags(['Обед', 'Ужин', 'Завтрак', 'Десерт', 'Быстро', 'Бюджетно']);
+        }
 
         // Fetch recipe data if editing
         if (isEdit && id) {
@@ -141,6 +152,25 @@ function RecipeForm() {
     setTags(prev =>
       prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
     );
+  };
+
+  const handleAddNewTag = () => {
+    const trimmedTag = newTagInput.trim();
+    if (trimmedTag && !availableTags.includes(trimmedTag)) {
+      setAvailableTags(prev => [...prev, trimmedTag]);
+      setTags(prev => [...prev, trimmedTag]);
+      setNewTagInput('');
+    } else if (trimmedTag && availableTags.includes(trimmedTag)) {
+      // If tag already exists, just select it
+      if (!tags.includes(trimmedTag)) {
+        setTags(prev => [...prev, trimmedTag]);
+      }
+      setNewTagInput('');
+    }
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setTags(prev => prev.filter(t => t !== tag));
   };
 
   // Upload main recipe image
@@ -366,17 +396,105 @@ function RecipeForm() {
 
         <div className="form-section">
           <h3>Теги</h3>
-          <div className="checkbox-group">
-            {availableTags.map(tag => (
-              <label key={tag} className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={tags.includes(tag)}
-                  onChange={() => handleTagToggle(tag)}
-                />
-                {tag}
-              </label>
-            ))}
+
+          {/* Add new tag input */}
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <input
+                type="text"
+                placeholder="Добавить новый тег..."
+                value={newTagInput}
+                onChange={(e) => setNewTagInput(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddNewTag();
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px'
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleAddNewTag}
+                className="btn-add"
+                style={{ padding: '0.5rem 1rem' }}
+              >
+                + Добавить
+              </button>
+            </div>
+          </div>
+
+          {/* Selected tags */}
+          {tags.length > 0 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <strong style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                Выбранные теги:
+              </strong>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                {tags.map(tag => (
+                  <span
+                    key={tag}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '0.4rem 0.8rem',
+                      background: '#4CAF50',
+                      color: 'white',
+                      borderRadius: '20px',
+                      fontSize: '0.9rem',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(tag)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '1.2rem',
+                        padding: 0,
+                        lineHeight: 1
+                      }}
+                      title="Удалить"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Available tags */}
+          <div>
+            <strong style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+              Доступные теги (клик для добавления):
+            </strong>
+            <div className="checkbox-group">
+              {availableTags.filter(tag => !tags.includes(tag)).map(tag => (
+                <label key={tag} className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={false}
+                    onChange={() => handleTagToggle(tag)}
+                  />
+                  {tag}
+                </label>
+              ))}
+              {availableTags.filter(tag => !tags.includes(tag)).length === 0 && (
+                <p style={{ color: '#999', fontSize: '0.9rem' }}>
+                  Все доступные теги уже выбраны
+                </p>
+              )}
+            </div>
           </div>
         </div>
 

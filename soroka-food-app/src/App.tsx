@@ -19,6 +19,7 @@ import Dashboard from './pages/admin/Dashboard';
 import AdminRecipes from './pages/admin/AdminRecipes';
 import RecipeForm from './pages/admin/RecipeForm';
 import AdminCategories from './pages/admin/AdminCategories';
+import AdminTags from './pages/admin/AdminTags';
 import AdminComments from './pages/admin/AdminComments';
 import AdminNewsletter from './pages/admin/AdminNewsletter';
 import AdminSettings from './pages/admin/AdminSettings';
@@ -155,6 +156,13 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <AdminCategories />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/tags" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminTags />
               </AdminLayout>
             </ProtectedRoute>
           } />

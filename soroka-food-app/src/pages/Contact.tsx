@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Breadcrumbs from '../components/Breadcrumbs/Breadcrumbs';
 import api from '../services/api';
 import type { StaticPage } from '../types';
+import { sanitizeHTML } from '../utils/sanitize';
 import '../styles/StaticPage.css';
 
 const Contact: React.FC = () => {
@@ -62,7 +63,7 @@ const Contact: React.FC = () => {
       <div className="static-page-container">
         <div className="static-page-content">
           <h1 className="static-page-title">{page.title}</h1>
-          <div dangerouslySetInnerHTML={{ __html: page.content }} />
+          <div dangerouslySetInnerHTML={{ __html: sanitizeHTML(page.content) }} />
         </div>
       </div>
     </>
