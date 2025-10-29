@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import Breadcrumbs from '../components/Breadcrumbs/Breadcrumbs';
 import api from '../services/api';
 import { getImageUrl } from '../utils/image';
+import { shouldCountView } from '../utils/viewTracker';
 import { useSettings } from '../contexts/SettingsContext';
 import type { RecipeDetail as RecipeDetailType, Comment } from '../types';
 import '../styles/RecipeDetail.css';
@@ -65,6 +66,16 @@ const RecipeDetail: React.FC = () => {
       document.title = originalTitle;
     };
   }, [recipe, settings]);
+
+  // Track view count (only once per 24 hours per user)
+  useEffect(() => {
+    if (recipe && shouldCountView(recipeId)) {
+      // Increment view count on backend
+      api.recipes.incrementView(recipeId).catch(err => {
+        console.error('Failed to increment view count:', err);
+      });
+    }
+  }, [recipe, recipeId]);
 
   if (loading) {
     return <div className="loading-message">Загрузка рецепта...</div>;

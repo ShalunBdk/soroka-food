@@ -17,6 +17,9 @@ function RecipeForm() {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [newTagInput, setNewTagInput] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategorySlug, setNewCategorySlug] = useState('');
+  const [showAddCategory, setShowAddCategory] = useState(false);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -146,6 +149,59 @@ function RecipeForm() {
     setSelectedCategoryIds(prev =>
       prev.includes(categoryId) ? prev.filter(id => id !== categoryId) : [...prev, categoryId]
     );
+  };
+
+  const handleRemoveCategory = (categoryId: number) => {
+    setSelectedCategoryIds(prev => prev.filter(id => id !== categoryId));
+  };
+
+  const handleAddNewCategory = async () => {
+    const trimmedName = newCategoryName.trim();
+    const trimmedSlug = newCategorySlug.trim();
+
+    if (!trimmedName || !trimmedSlug) {
+      alert('Пожалуйста, заполните название и slug категории');
+      return;
+    }
+
+    try {
+      const newCategory = await api.admin.categories.create({
+        name: trimmedName,
+        slug: trimmedSlug,
+        description: ''
+      });
+
+      // Refresh categories list
+      const categoriesData = await api.categories.getAll();
+      setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+
+      // Select the newly created category
+      setSelectedCategoryIds(prev => [...prev, newCategory.id]);
+
+      // Reset form
+      setNewCategoryName('');
+      setNewCategorySlug('');
+      setShowAddCategory(false);
+    } catch (err) {
+      alert('Не удалось создать категорию. Возможно, такой slug уже существует.');
+      console.error('Error creating category:', err);
+    }
+  };
+
+  const generateSlug = (name: string) => {
+    const translit: { [key: string]: string } = {
+      'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh',
+      'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
+      'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts',
+      'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya'
+    };
+
+    return name.toLowerCase()
+      .split('')
+      .map(char => translit[char] || char)
+      .join('')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   };
 
   const handleTagToggle = (tag: string) => {
@@ -380,17 +436,154 @@ function RecipeForm() {
 
         <div className="form-section">
           <h3>Категории</h3>
-          <div className="checkbox-group">
-            {Array.isArray(categories) && categories.map(cat => (
-              <label key={cat.id} className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={selectedCategoryIds.includes(cat.id)}
-                  onChange={() => handleCategoryToggle(cat.id)}
-                />
-                {cat.name}
-              </label>
-            ))}
+
+          {/* Add new category button/form */}
+          <div style={{ marginBottom: '1rem' }}>
+            {!showAddCategory ? (
+              <button
+                type="button"
+                onClick={() => setShowAddCategory(true)}
+                className="btn-add"
+                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+              >
+                + Создать новую категорию
+              </button>
+            ) : (
+              <div style={{
+                padding: '1rem',
+                background: '#f9f9f9',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                marginBottom: '1rem'
+              }}>
+                <h4 style={{ marginTop: 0, marginBottom: '0.75rem', fontSize: '0.95rem' }}>
+                  Новая категория
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <input
+                    type="text"
+                    placeholder="Название категории (например, Салаты)"
+                    value={newCategoryName}
+                    onChange={(e) => {
+                      setNewCategoryName(e.target.value);
+                      // Auto-generate slug
+                      setNewCategorySlug(generateSlug(e.target.value));
+                    }}
+                    style={{
+                      padding: '0.5rem',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px'
+                    }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Slug (например, salads)"
+                    value={newCategorySlug}
+                    onChange={(e) => setNewCategorySlug(e.target.value)}
+                    style={{
+                      padding: '0.5rem',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px'
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      type="button"
+                      onClick={handleAddNewCategory}
+                      className="btn-submit"
+                      style={{ padding: '0.5rem 1rem' }}
+                    >
+                      Создать
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddCategory(false);
+                        setNewCategoryName('');
+                        setNewCategorySlug('');
+                      }}
+                      className="btn-secondary"
+                      style={{ padding: '0.5rem 1rem' }}
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Selected categories */}
+          {selectedCategoryIds.length > 0 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <strong style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                Выбранные категории:
+              </strong>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                {selectedCategoryIds.map(catId => {
+                  const cat = categories.find(c => c.id === catId);
+                  return cat ? (
+                    <span
+                      key={catId}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '0.4rem 0.8rem',
+                        background: '#2196F3',
+                        color: 'white',
+                        borderRadius: '20px',
+                        fontSize: '0.9rem',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      {cat.name}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCategory(catId)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'white',
+                          cursor: 'pointer',
+                          fontSize: '1.2rem',
+                          padding: 0,
+                          lineHeight: 1
+                        }}
+                        title="Удалить"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ) : null;
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Available categories */}
+          <div>
+            <strong style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+              Доступные категории (клик для добавления):
+            </strong>
+            <div className="checkbox-group">
+              {Array.isArray(categories) && categories
+                .filter(cat => !selectedCategoryIds.includes(cat.id))
+                .map(cat => (
+                  <label key={cat.id} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={false}
+                      onChange={() => handleCategoryToggle(cat.id)}
+                    />
+                    {cat.name}
+                  </label>
+                ))}
+              {categories.filter(cat => !selectedCategoryIds.includes(cat.id)).length === 0 && (
+                <p style={{ color: '#999', fontSize: '0.9rem' }}>
+                  Все категории уже выбраны
+                </p>
+              )}
+            </div>
           </div>
         </div>
 

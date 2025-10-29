@@ -68,8 +68,8 @@ async function apiRequest<T>(
     if (!response.ok) {
       const errorData = hasJson ? await response.json() : { message: response.statusText };
 
-      // Auto-logout on 401 Unauthorized
-      if (response.status === 401) {
+      // Auto-logout on 401 Unauthorized or 403 Forbidden (expired/invalid token)
+      if (response.status === 401 || response.status === 403) {
         tokenManager.removeToken();
         window.location.href = '/admin/login';
       }
@@ -141,6 +141,12 @@ export const api = {
 
     async getById(id: number): Promise<any> {
       return apiRequest(`/recipes/${id}`);
+    },
+
+    async incrementView(id: number): Promise<{ success: boolean; views: number }> {
+      return apiRequest(`/recipes/${id}/view`, {
+        method: 'POST',
+      });
     },
 
     async getByCategory(slug: string, page = 1, limit = 9): Promise<{ category: any; recipes: any[]; pagination: any }> {
@@ -373,6 +379,13 @@ export const api = {
 
       if (!response.ok) {
         const error = await response.json();
+
+        // Auto-logout on 401/403
+        if (response.status === 401 || response.status === 403) {
+          tokenManager.removeToken();
+          window.location.href = '/admin/login';
+        }
+
         throw new ApiError(error.message || 'Upload failed', response.status);
       }
 
@@ -399,6 +412,13 @@ export const api = {
 
       if (!response.ok) {
         const error = await response.json();
+
+        // Auto-logout on 401/403
+        if (response.status === 401 || response.status === 403) {
+          tokenManager.removeToken();
+          window.location.href = '/admin/login';
+        }
+
         throw new ApiError(error.message || 'Upload failed', response.status);
       }
 

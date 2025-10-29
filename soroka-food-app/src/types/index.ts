@@ -79,8 +79,8 @@ export interface AdminStats {
   totalComments: number;
   pendingComments: number;
   totalSubscribers: number;
-  viewsLast7Days: number;
-  viewsLast30Days: number;
+  totalViews: number;
+  avgViewsPerRecipe: number;
 }
 
 export interface NewsletterSubscriber {

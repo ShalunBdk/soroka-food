@@ -231,6 +231,22 @@ form {
   background: #6d3410;
 }
 
+.btn-secondary {
+  padding: 0.7rem 1.2rem;
+  background: white;
+  color: #666;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
 .btn-cancel {
   padding: 1rem 2rem;
   background: white;

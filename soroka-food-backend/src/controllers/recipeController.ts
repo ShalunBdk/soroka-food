@@ -97,12 +97,6 @@ export const getRecipeById = async (req: Request, res: Response): Promise<void> 
     throw new AppError('Recipe not found', 404);
   }
 
-  // Increment views
-  await prisma.recipe.update({
-    where: { id: parseInt(id) },
-    data: { views: { increment: 1 } }
-  });
-
   const recipeDetail = {
     id: recipe.id,
     title: recipe.title,
@@ -113,7 +107,7 @@ export const getRecipeById = async (req: Request, res: Response): Promise<void> 
     servings: recipe.servings,
     author: recipe.author,
     date: recipe.date.toISOString().split('T')[0],
-    views: recipe.views + 1,
+    views: recipe.views,
     rating: recipe.rating,
     status: recipe.status,
     category: recipe.categories.map(c => c.category.name),
@@ -321,6 +315,30 @@ export const getPublicStats = async (req: Request, res: Response): Promise<void>
     commentsCount: totalComments,
     usersCount: totalUsers
   });
+};
+
+// Increment recipe view count (separate endpoint for better tracking)
+export const incrementRecipeView = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+
+  // Check if recipe exists and is published
+  const recipe = await prisma.recipe.findUnique({
+    where: { id: parseInt(id) },
+    select: { id: true, status: true }
+  });
+
+  if (!recipe || recipe.status !== 'PUBLISHED') {
+    throw new AppError('Recipe not found', 404);
+  }
+
+  // Increment view count
+  const updated = await prisma.recipe.update({
+    where: { id: parseInt(id) },
+    data: { views: { increment: 1 } },
+    select: { views: true }
+  });
+
+  res.json({ success: true, views: updated.views });
 };
 
 // Helper function to format dates

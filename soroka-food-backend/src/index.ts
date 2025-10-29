@@ -18,11 +18,12 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:"],
+      imgSrc: ["'self'", "data:", "https:", "http://localhost:5173"],
       scriptSrc: ["'self'"],
     },
   },
   crossOriginEmbedderPolicy: false, // Allow loading external images
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow images to be loaded cross-origin
 }));
 
 // CORS Configuration
@@ -54,8 +55,13 @@ app.use(express.urlencoded({ extended: true }));
 import { apiLimiter } from './middleware/rateLimiter';
 app.use('/api/', apiLimiter);
 
-// Serve static files (uploaded images)
-app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+// Serve static files (uploaded images) with CORS headers
+app.use('/uploads', (req, res, next) => {
+  // Set CORS headers for static files
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(__dirname, '../public/uploads')));
 
 // Health check route
 app.get('/api/health', (req: Request, res: Response) => {

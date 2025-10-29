@@ -28,29 +28,15 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
     })
   ]);
 
-  // Calculate views for last 7 and 30 days
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-  const recentRecipes7Days = await prisma.recipe.findMany({
-    where: {
-      createdAt: { gte: sevenDaysAgo }
-    },
+  // Calculate total views across all recipes
+  const allRecipes = await prisma.recipe.findMany({
     select: { views: true }
   });
 
-  const recentRecipes30Days = await prisma.recipe.findMany({
-    where: {
-      createdAt: { gte: thirtyDaysAgo }
-    },
-    select: { views: true }
-  });
+  const totalViews = allRecipes.reduce((sum, r) => sum + r.views, 0);
 
-  const viewsLast7Days = recentRecipes7Days.reduce((sum, r) => sum + r.views, 0);
-  const viewsLast30Days = recentRecipes30Days.reduce((sum, r) => sum + r.views, 0);
+  // Calculate average views per recipe
+  const avgViewsPerRecipe = totalRecipes > 0 ? Math.round(totalViews / totalRecipes) : 0;
 
   res.json({
     stats: {
@@ -60,8 +46,8 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
       totalComments,
       pendingComments,
       totalSubscribers,
-      viewsLast7Days,
-      viewsLast30Days
+      totalViews,
+      avgViewsPerRecipe
     },
     recentRecipes: recentRecipes.map(r => ({
       id: r.id,

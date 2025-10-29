@@ -81,9 +81,11 @@ function Dashboard() {
         <div className="stat-card">
           <div className="stat-icon">👁️</div>
           <div className="stat-content">
-            <h3>Просмотры</h3>
-            <p className="stat-number">{stats.viewsLast7Days.toLocaleString()}</p>
-            <span className="stat-detail">За последние 7 дней</span>
+            <h3>Всего просмотров</h3>
+            <p className="stat-number">{stats.totalViews.toLocaleString()}</p>
+            <span className="stat-detail">
+              В среднем {stats.avgViewsPerRecipe} на рецепт
+            </span>
           </div>
         </div>
       </div>

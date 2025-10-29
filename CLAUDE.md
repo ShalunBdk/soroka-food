@@ -94,18 +94,21 @@ npm run prisma:seed      # Seed database
 - Tab-based filtering (Newest, Popular, With Photo)
 - Search functionality with tag support
 - Detailed recipe views with ingredients, instructions, nutrition info
+- **Social sharing** (VKontakte, Telegram, WhatsApp, copy link)
 - Comment system with ratings (moderated)
 - Newsletter subscription
 - Dynamic category sidebar (loaded from database)
 - Real-time site statistics (recipes, users, comments)
 - Dynamic document title (browser tab updates from settings)
+- **Smart view tracking** (counts unique views per 24 hours per user)
 
 **Admin Panel** (`/admin/*`)
 - JWT-protected routes
 - Admin login at `/admin/login`
-- Dashboard with statistics
+- Dashboard with statistics (total views, avg views per recipe)
 - Recipe management (CRUD operations)
-- Category management
+- Category management (create, edit, delete)
+- **Tag management** (view, rename, delete tags across all recipes)
 - Comment moderation (approve/pending/spam)
 - Newsletter subscriber management
 - Static pages management (About, Contact, Rules, Advertising)
@@ -129,7 +132,8 @@ npm run prisma:seed      # Seed database
 - `POST /api/auth/login` - User login, returns JWT token
 - `POST /api/auth/register` - Create new user
 - `GET /api/recipes` - List published recipes (supports ?page=1&limit=9&sort=newest|popular|photo)
-- `GET /api/recipes/:id` - Recipe details (increments views)
+- `GET /api/recipes/:id` - Recipe details (does NOT increment views)
+- `POST /api/recipes/:id/view` - Increment view count (called by frontend with throttling)
 - `GET /api/recipes/search` - Search recipes (?q=query&page=1&limit=9) - searches title, description, tags
 - `GET /api/recipes/stats` - Public site statistics (recipesCount, commentsCount, usersCount)
 - `GET /api/recipes/cuisines/:type` - Recipes by cuisine type (russian/european/asian/eastern)
@@ -152,6 +156,9 @@ npm run prisma:seed      # Seed database
 - `POST /api/admin/categories` - Create category
 - `PUT /api/admin/categories/:id` - Update category
 - `DELETE /api/admin/categories/:id` - Delete category
+- `GET /api/admin/tags` - Get all tags with usage count
+- `PUT /api/admin/tags/rename` - Rename tag across all recipes
+- `DELETE /api/admin/tags/:name` - Delete tag from all recipes
 - `GET /api/admin/comments` - All comments (filter by status)
 - `PATCH /api/admin/comments/:id/status` - Moderate comment
 - `DELETE /api/admin/comments/:id` - Delete comment
@@ -310,7 +317,16 @@ import { getImageUrl } from '../utils/image';
   - Main recipe image with preview
   - Multiple step images (up to 5 per step) with preview
   - Real-time upload status indicators
-- Fetches categories from API for selection
+- **Enhanced Category Management**:
+  - View and select from existing categories
+  - Create new categories directly in form with auto-generated slug
+  - Russian-to-Latin transliteration for slugs
+  - Visual display of selected categories with remove option
+- **Enhanced Tag Management**:
+  - Auto-loads existing tags from API
+  - Create new tags on-the-fly (add to form input)
+  - Visual display of selected tags with remove option
+  - Tags shared across all recipes
 - Supports DRAFT and PUBLISHED status
 
 **Error Handling**:
@@ -402,6 +418,59 @@ The RecipeDetail page (`/recipe/:id`) includes two sidebars with related content
 - All recipe links are functional and navigate to recipe detail pages
 - Images processed with `getImageUrl()` helper for correct display
 - Fallback messages shown when insufficient recipes available
+
+**Smart View Tracking System**:
+Improved view counting prevents inflated statistics:
+
+**Frontend** (`soroka-food-app/src/utils/viewTracker.ts`):
+- Tracks viewed recipes in localStorage with timestamps
+- Only counts views once per 24 hours per user
+- Automatic cleanup of expired view records
+- `shouldCountView(recipeId)` - checks if view should be counted
+- `getTimeUntilNextView(recipeId)` - returns hours until next count
+- Fallback behavior if localStorage unavailable
+
+**Backend** (`recipeController.ts:incrementRecipeView`):
+- Separate endpoint `POST /api/recipes/:id/view` for view tracking
+- `GET /api/recipes/:id` no longer auto-increments views
+- Validates recipe exists and is published before incrementing
+- Returns updated view count
+
+**Integration** (`RecipeDetail.tsx:70-78`):
+- Checks localStorage before sending increment request
+- Non-blocking API call (doesn't affect page load)
+- Only increments if 24 hours passed since last view
+
+**Social Sharing Features**:
+Recipe detail pages include functional sharing buttons:
+
+**Implementation** (`RecipeDetail.tsx:116-174`):
+- **VKontakte**: Opens VK share dialog with recipe title and URL
+- **Telegram**: Shares via Telegram with formatted message
+- **WhatsApp**: Shares recipe link via WhatsApp
+- **Copy Link**: Copies current URL to clipboard with fallback for older browsers
+
+All sharing functions use `window.location.href` for current recipe URL and open in popup windows (600x400px).
+
+**Tag Management System**:
+Complete CRUD system for managing tags across all recipes:
+
+**Backend** (`tagController.ts`):
+- `getAllTags()` - Returns all unique tags with usage count, sorted by popularity
+- `renameTag(oldName, newName)` - Renames tag across all recipes that use it
+- `deleteTag(name)` - Removes tag from all recipes
+
+**Admin Interface** (`/admin/tags`):
+- View all tags with usage statistics
+- Inline editing to rename tags (updates all recipes)
+- Delete tags with confirmation (shows usage count)
+- Tags sorted by usage count (most popular first)
+
+**Frontend Integration**:
+- Tags auto-load in RecipeForm from `api.admin.tags.getAll()`
+- Create new tags directly in recipe form
+- Visual tag chips with remove buttons
+- Tags are shared globally across all recipes
 
 ## API Integration
 
