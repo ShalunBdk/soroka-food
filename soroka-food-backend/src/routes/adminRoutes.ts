@@ -29,9 +29,16 @@ import {
   deleteTag
 } from '../controllers/tagController';
 import {
+  getSpamFilterSettings,
+  updateSpamFilterSettings,
+  addSpamKeyword,
+  removeSpamKeyword
+} from '../controllers/spamFilterController';
+import {
   authenticateToken,
   requireModeratorOrAbove,
   requireAdminOrAbove,
+  requireSuperAdmin
 } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
 import { validate } from '../middleware/validation';
@@ -83,5 +90,12 @@ router.delete('/newsletter/:id', requireAdminOrAbove, asyncHandler(deleteSubscri
 // Site settings (basic + advanced - will be split in future)
 router.get('/settings', requireAdminOrAbove, asyncHandler(getSettings));
 router.put('/settings', requireAdminOrAbove, asyncHandler(updateSettings));
+
+// Super Admin Only Routes
+// Spam filter management
+router.get('/spam-filter', requireSuperAdmin, asyncHandler(getSpamFilterSettings));
+router.put('/spam-filter', requireSuperAdmin, asyncHandler(updateSpamFilterSettings));
+router.post('/spam-filter/keywords', requireSuperAdmin, asyncHandler(addSpamKeyword));
+router.delete('/spam-filter/keywords/:keyword', requireSuperAdmin, asyncHandler(removeSpamKeyword));
 
 export default router;

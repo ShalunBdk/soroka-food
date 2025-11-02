@@ -59,7 +59,7 @@ export const createComment = async (req: Request, res: Response): Promise<void> 
   }
 
   // Auto spam filter
-  const spamCheck = checkForSpam(text, author, email);
+  const spamCheck = await checkForSpam(text, author, email);
   const status = spamCheck.isSpam ? 'SPAM' : 'PENDING';
 
   const comment = await prisma.comment.create({

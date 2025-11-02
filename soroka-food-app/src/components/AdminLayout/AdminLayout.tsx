@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { tokenManager } from '../../services/api';
 import './AdminLayout.css';
 
 interface AdminLayoutProps {
@@ -8,6 +9,8 @@ interface AdminLayoutProps {
 function AdminLayout({ children }: AdminLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const currentUser = tokenManager.getCurrentUser();
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
 
   const handleLogout = () => {
     localStorage.removeItem('admin_logged_in');
@@ -23,7 +26,8 @@ function AdminLayout({ children }: AdminLayoutProps) {
     { path: '/admin/users', label: 'Пользователи', icon: '👥' },
     { path: '/admin/newsletter', label: 'Подписчики', icon: '✉️' },
     { path: '/admin/static-pages', label: 'Статические страницы', icon: '📄' },
-    { path: '/admin/settings', label: 'Настройки', icon: '⚙️' }
+    { path: '/admin/settings', label: 'Настройки', icon: '⚙️' },
+    ...(isSuperAdmin ? [{ path: '/admin/spam-filter', label: 'Спам-фильтр', icon: '🛡️' }] : [])
   ];
 
   return (

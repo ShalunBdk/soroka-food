@@ -193,7 +193,7 @@ export const api = {
       return apiRequest(`/comments/recipe/${recipeId}`);
     },
 
-    async create(data: { recipeId: number; author: string; email: string; rating: number; text: string }): Promise<any> {
+    async create(data: { recipeId: number; author: string; email: string; rating: number; text: string; website?: string }): Promise<any> {
       return apiRequest('/comments', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -421,6 +421,41 @@ export const api = {
         return apiRequest(`/admin/users/${id}/status`, {
           method: 'PATCH',
           body: JSON.stringify({ active }),
+        });
+      }
+    },
+
+    // Admin Spam Filter (SUPER_ADMIN only)
+    spamFilter: {
+      async getSettings(): Promise<any> {
+        return apiRequest('/admin/spam-filter');
+      },
+
+      async updateSettings(data: {
+        enableKeywordFilter?: boolean;
+        enableUrlFilter?: boolean;
+        enableCapsFilter?: boolean;
+        enableRepetitiveFilter?: boolean;
+        enableDuplicateFilter?: boolean;
+        maxUrls?: number;
+        capsPercentage?: number;
+      }): Promise<any> {
+        return apiRequest('/admin/spam-filter', {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+      },
+
+      async addKeyword(keyword: string): Promise<any> {
+        return apiRequest('/admin/spam-filter/keywords', {
+          method: 'POST',
+          body: JSON.stringify({ keyword }),
+        });
+      },
+
+      async removeKeyword(keyword: string): Promise<any> {
+        return apiRequest(`/admin/spam-filter/keywords/${encodeURIComponent(keyword)}`, {
+          method: 'DELETE',
         });
       }
     }

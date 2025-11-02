@@ -165,3 +165,26 @@ model StaticPage {
 
   @@map("static_pages")
 }
+
+// Spam filter settings (single row)
+model SpamFilterSettings {
+  id        Int      @id @default(1)
+
+  // Custom spam keywords (in addition to built-in ones)
+  customKeywords String[] @default([])
+
+  // Filter toggles
+  enableKeywordFilter      Boolean @default(true)
+  enableUrlFilter          Boolean @default(true)
+  enableCapsFilter         Boolean @default(true)
+  enableRepetitiveFilter   Boolean @default(true)
+  enableDuplicateFilter    Boolean @default(true)
+
+  // Filter thresholds
+  maxUrls                  Int     @default(2)   // Max URLs allowed before marking as spam
+  capsPercentage           Int     @default(80)  // Percentage of caps to trigger filter (80%)
+
+  updatedAt DateTime @updatedAt
+
+  @@map("spam_filter_settings")
+}

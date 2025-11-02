@@ -25,8 +25,8 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## Architecture
 
-### Database Schema (8 tables)
-`users` (roles: SUPER_ADMIN/ADMIN/MODERATOR, active status), `categories`, `recipes` (with JSON: ingredients, instructions, nutrition, tips), `recipe_categories`, `comments` (moderation: APPROVED/PENDING/SPAM), `newsletter_subscribers`, `site_settings`, `static_pages`
+### Database Schema (9 tables)
+`users` (roles: SUPER_ADMIN/ADMIN/MODERATOR, active status), `categories`, `recipes` (with JSON: ingredients, instructions, nutrition, tips), `recipe_categories`, `comments` (moderation: APPROVED/PENDING/SPAM), `newsletter_subscribers`, `site_settings`, `static_pages`, `spam_filter_settings` (configurable anti-spam rules)
 
 ### Key Routes
 
@@ -37,14 +37,14 @@ This file provides guidance to Claude Code when working with this repository.
 - `/about`, `/contact`, `/rules`, `/advertising` - Editable static pages
 
 **Admin** (`/admin/*` - JWT protected, role-based access):
-- Dashboard, Recipes (CRUD), Categories, Tags (rename/delete), Comments (moderation), Newsletter (ADMIN+), Users (ADMIN+), Static Pages (ADMIN+), Settings (ADMIN+)
+- Dashboard, Recipes (CRUD), Categories, Tags (rename/delete), Comments (moderation with bulk actions), Newsletter (ADMIN+), Users (ADMIN+), Static Pages (ADMIN+), Settings (ADMIN+), Spam Filter (SUPER_ADMIN only)
 
 ### API Endpoints
 
 **Public**: `/api/auth/login`, `/api/recipes` (supports ?sort=newest|popular|photo), `/api/recipes/:id`, `/api/recipes/:id/view`, `/api/recipes/search`, `/api/recipes/stats`, `/api/recipes/cuisines/:type`, `/api/categories`, `/api/categories/:slug/recipes`, `/api/settings`, `/api/static-pages/:slug`, `/api/comments`, `/api/newsletter/subscribe`
 
 **Protected** (requires `Authorization: Bearer <token>`):
-- `/api/admin/*` - stats (MOD+), recipes (MOD+), categories (MOD+), tags (MOD+), comments (MOD+), newsletter (ADMIN+), users (ADMIN+), settings (ADMIN+), static-pages (ADMIN+)
+- `/api/admin/*` - stats (MOD+), recipes (MOD+), categories (MOD+), tags (MOD+), comments (MOD+ including bulk actions), newsletter (ADMIN+), users (ADMIN+), settings (ADMIN+), static-pages (ADMIN+), spam-filter (SUPER_ADMIN only)
 - `/api/upload/*` - recipe-image (MOD+), step-images (MOD+)
 
 ## Database & Types
@@ -61,21 +61,21 @@ This file provides guidance to Claude Code when working with this repository.
 ```
 soroka-food-app/src/
 ├── components/      # Header (dynamic logo/name), Footer, RecipeCard, Pagination, Sidebar, SiteStats
-├── pages/           # Home, RecipeDetail, CategoryPage, CuisinePage, SearchResults, BestRecipes, static pages
-├── pages/admin/     # Dashboard, AdminRecipes, RecipeForm, AdminStaticPages, AdminSettings, etc.
+├── pages/           # Home, RecipeDetail (with honeypot), CategoryPage, CuisinePage, SearchResults, BestRecipes, static pages
+├── pages/admin/     # Dashboard, AdminRecipes, RecipeForm, AdminStaticPages, AdminSettings, AdminSpamFilter, AdminComments (with bulk actions), etc.
 ├── hooks/           # useCategories, useSidebarData
-├── contexts/        # SettingsContext (global state, loads once)
+├── contexts/        # SettingsContext (global state, loads once), ToastContext
 ├── services/        # api.ts (centralized API client with token management)
 ├── utils/           # image.ts (getImageUrl helper), sanitize.ts (DOMPurify), viewTracker.ts
 ├── styles/          # Plain CSS, component-scoped (Header.css, Home.css, etc.)
 └── types/           # TypeScript definitions
 
 soroka-food-backend/src/
-├── controllers/     # authController, recipeController, adminController, staticPageController, tagController, userController
+├── controllers/     # authController, recipeController, adminController, staticPageController, tagController, userController, spamFilterController
 ├── routes/          # authRoutes, recipeRoutes, adminRoutes, staticPageRoutes, uploadRoutes, userRoutes
 ├── middleware/      # auth, errorHandler, upload (multer), rateLimiter, validation, imageValidation, permissions
 ├── validators/      # Zod schemas (auth, recipe, comment, user)
-├── utils/           # jwt, password (bcrypt), imageProcessor (Sharp)
+├── utils/           # jwt, password (bcrypt), imageProcessor (Sharp), spamFilter
 └── config/          # database.ts (Prisma client)
 ```
 
@@ -108,7 +108,8 @@ soroka-food-backend/src/
 ### Features
 - **Search**: Case-insensitive across title/description/tags, supports pagination
 - **Filtering**: `?sort=newest|popular|photo`, by category/cuisine
-- **Comments**: Submit → PENDING → Admin moderates (APPROVED/PENDING/SPAM) → Display APPROVED only
+- **Comments**: Submit → Auto spam check → PENDING/SPAM → Admin moderates (APPROVED/PENDING/SPAM) → Display APPROVED only
+- **Spam Protection**: Multi-layer defense - honeypot trap, auto-detection (keywords/URLs/caps/repetition/duplicates), bulk moderation actions, configurable filters (SUPER_ADMIN only)
 - **Tags**: Global CRUD system - view usage stats, rename across all recipes, delete with confirmation
 - **Static Pages**: Database-driven, editable via admin with HTML editor, sanitized with DOMPurify
 - **Social Sharing**: VK, Telegram, WhatsApp, copy link (RecipeDetail.tsx:116-174)
@@ -133,7 +134,7 @@ soroka-food-backend/src/
 | Static Pages | ✓ | ✓ | ✗ |
 | Site Settings | ✓ | ✓ | ✗ |
 | User Management | ✓ | ✓ (MODERATOR only) | ✗ |
-| Advanced Settings (future) | ✓ | ✗ | ✗ |
+| Spam Filter Management | ✓ | ✗ | ✗ |
 
 **User Management API** (`/api/admin/users/*` - requires ADMIN or above):
 - `GET /api/admin/users` - List all users (optional ?role=SUPER_ADMIN|ADMIN|MODERATOR filter)
@@ -157,6 +158,56 @@ soroka-food-backend/src/
 **Implementation Files**:
 - Backend: `controllers/userController.ts`, `routes/userRoutes.ts`, `validators/user.validator.ts`, `middleware/permissions.ts`
 - Frontend: `pages/admin/AdminUsers.tsx`, `pages/admin/UserForm.tsx`, updated `services/api.ts`, updated `types/index.ts`
+
+### Anti-Spam System
+
+**Multi-Layer Protection** (6 levels of defense):
+
+1. **Honeypot Trap** (`RecipeDetail.tsx`):
+   - Hidden 'website' field (invisible to humans, visible to bots)
+   - Bots filling this field are silently marked as SPAM with fake success response
+
+2. **Automatic Spam Detection** (`utils/spamFilter.ts`):
+   - **Keyword Filter**: Checks against built-in spam words (100+ terms) + custom keywords (configurable)
+   - **URL Filter**: Detects excessive links (configurable threshold 0-10)
+   - **Caps Filter**: Blocks ALL CAPS text (configurable percentage 50-100%)
+   - **Repetitive Filter**: Identifies repeated characters/patterns
+   - **Duplicate Filter**: Prevents same text reposting within 24h window
+
+3. **Bulk Moderation** (`AdminComments.tsx`):
+   - Checkbox selection with "Select All" option
+   - Mass actions: Approve, Mark as Spam, Set to Pending, Delete
+   - Handles large spam waves efficiently (vs clicking 1000 times)
+
+4. **Configurable Spam Filter** (SUPER_ADMIN only, `/admin/spam-filter`):
+   - **Toggle Filters**: Enable/disable each detection method independently
+   - **Adjustable Thresholds**: Slider controls for maxUrls (0-10) and capsPercentage (50-100%)
+   - **Custom Keywords**: Add/remove spam words dynamically, displayed as chips
+   - **Database-Driven**: All settings stored in `SpamFilterSettings` table (single-row, id=1)
+   - **Real-time Updates**: Changes apply immediately with toast notifications
+   - **Smart UI**: Sliders save only on mouse release (not during drag) for smooth UX
+
+5. **API Endpoints** (SUPER_ADMIN only):
+   - `GET /api/admin/spam-filter` - Get current settings
+   - `PUT /api/admin/spam-filter` - Update filter toggles/thresholds
+   - `POST /api/admin/spam-filter/keywords` - Add custom spam keyword
+   - `DELETE /api/admin/spam-filter/keywords/:keyword` - Remove keyword
+
+6. **Comment Submission Flow**:
+   ```
+   User submits comment → Honeypot check → Spam filter analysis → Status assigned (PENDING/SPAM) → Database → Moderator reviews → APPROVED comments displayed
+   ```
+
+**Implementation Files**:
+- Backend: `utils/spamFilter.ts`, `controllers/spamFilterController.ts`, `controllers/commentController.ts`, `routes/adminRoutes.ts`
+- Frontend: `pages/admin/AdminSpamFilter.tsx`, `pages/admin/AdminComments.tsx` (with bulk actions), `pages/RecipeDetail.tsx` (honeypot)
+- Database: `prisma/schema.prisma` (SpamFilterSettings model)
+
+**Key Features**:
+- Zero configuration required (works with sensible defaults)
+- SUPER_ADMIN can fine-tune all detection parameters
+- Non-intrusive (legitimate users never see spam protection)
+- Protects against bot spam, manual spam, and mass spam attacks
 
 ### Error Handling
 - Backend: `AppError` class, global `errorHandler` middleware, `asyncHandler` wrapper
@@ -258,3 +309,4 @@ MAX_FILE_SIZE=5242880  # 5MB
 **Recent Enhancements**:
 - **2025-01-26**: SettingsContext for performance (1 API call per session vs 8+ per navigation), Dynamic site branding (logo + name from settings, Montserrat typography), Production deployment setup (single-server architecture on :3000), Security features (Helmet, CORS, Rate Limiting, Zod validation, Sharp image validation, DOMPurify XSS protection)
 - **2025-01-03**: User Management & Role-Based Access Control - Three-tier role hierarchy (SUPER_ADMIN/ADMIN/MODERATOR), granular permission system, user CRUD API, AdminUsers page, UserForm with password management, role-based route protection, privilege escalation prevention
+- **2025-01-03**: Anti-Spam System - 6-layer protection (honeypot, auto-detection with 5 filters, bulk moderation, configurable spam filter for SUPER_ADMIN), database-driven settings, custom keyword management, smart UI with optimized slider behavior, handles mass spam attacks efficiently

@@ -3,34 +3,85 @@
  * Checks comments for spam patterns
  */
 
+import prisma from '../config/database';
+
 interface SpamCheckResult {
   isSpam: boolean;
   reason?: string;
 }
 
-// Common spam keywords (can be extended)
-const SPAM_KEYWORDS = [
+interface SpamFilterSettings {
+  customKeywords: string[];
+  enableKeywordFilter: boolean;
+  enableUrlFilter: boolean;
+  enableCapsFilter: boolean;
+  enableRepetitiveFilter: boolean;
+  enableDuplicateFilter: boolean;
+  maxUrls: number;
+  capsPercentage: number;
+}
+
+// Common spam keywords (built-in)
+const DEFAULT_SPAM_KEYWORDS = [
   'viagra', 'cialis', 'casino', 'poker', 'lottery', 'winner',
   'click here', 'buy now', 'free money', 'earn money',
   'make money online', 'work from home', 'weight loss',
   'dating', 'xxx', 'porn', 'sex', 'adult'
 ];
 
-// Russian spam keywords
-const RUSSIAN_SPAM_KEYWORDS = [
+// Russian spam keywords (built-in)
+const DEFAULT_RUSSIAN_SPAM_KEYWORDS = [
   'виагра', 'казино', 'заработок', 'кредит', 'займ',
   'ставки', 'букмекер', 'порно', 'секс', 'знакомства',
   'продвижение сайта', 'раскрутка сайта'
 ];
 
-const ALL_SPAM_KEYWORDS = [...SPAM_KEYWORDS, ...RUSSIAN_SPAM_KEYWORDS];
+const DEFAULT_KEYWORDS = [...DEFAULT_SPAM_KEYWORDS, ...DEFAULT_RUSSIAN_SPAM_KEYWORDS];
+
+/**
+ * Get spam filter settings from database
+ */
+async function getSpamFilterSettings(): Promise<SpamFilterSettings> {
+  let settings = await prisma.spamFilterSettings.findUnique({
+    where: { id: 1 }
+  });
+
+  // Create default settings if not exist
+  if (!settings) {
+    settings = await prisma.spamFilterSettings.create({
+      data: {
+        id: 1,
+        customKeywords: [],
+        enableKeywordFilter: true,
+        enableUrlFilter: true,
+        enableCapsFilter: true,
+        enableRepetitiveFilter: true,
+        enableDuplicateFilter: true,
+        maxUrls: 2,
+        capsPercentage: 80
+      }
+    });
+  }
+
+  return {
+    customKeywords: settings.customKeywords,
+    enableKeywordFilter: settings.enableKeywordFilter,
+    enableUrlFilter: settings.enableUrlFilter,
+    enableCapsFilter: settings.enableCapsFilter,
+    enableRepetitiveFilter: settings.enableRepetitiveFilter,
+    enableDuplicateFilter: settings.enableDuplicateFilter,
+    maxUrls: settings.maxUrls,
+    capsPercentage: settings.capsPercentage
+  };
+}
 
 /**
  * Check if text contains spam keywords
  */
-function containsSpamKeywords(text: string): boolean {
+function containsSpamKeywords(text: string, customKeywords: string[]): boolean {
   const lowerText = text.toLowerCase();
-  return ALL_SPAM_KEYWORDS.some(keyword => lowerText.includes(keyword));
+  const allKeywords = [...DEFAULT_KEYWORDS, ...customKeywords.map(k => k.toLowerCase())];
+  return allKeywords.some(keyword => lowerText.includes(keyword));
 }
 
 /**
@@ -65,47 +116,51 @@ function isRepetitive(text: string): boolean {
 /**
  * Check if text is all caps (spam indicator)
  */
-function isAllCaps(text: string): boolean {
+function isAllCaps(text: string, capsPercentage: number): boolean {
   const letters = text.replace(/[^a-zA-Zа-яА-ЯёЁ]/g, '');
   if (letters.length < 10) return false; // Too short to judge
 
   const uppercase = text.replace(/[^A-ZА-ЯЁ]/g, '');
-  return uppercase.length / letters.length > 0.8; // 80% uppercase
+  return uppercase.length / letters.length > (capsPercentage / 100);
 }
 
 /**
  * Main spam check function
  */
-export function checkForSpam(text: string, author: string, email?: string): SpamCheckResult {
+export async function checkForSpam(text: string, author: string, email?: string): Promise<SpamCheckResult> {
+  const settings = await getSpamFilterSettings();
+
   // Check for spam keywords
-  if (containsSpamKeywords(text)) {
+  if (settings.enableKeywordFilter && containsSpamKeywords(text, settings.customKeywords)) {
     return { isSpam: true, reason: 'Contains spam keywords' };
   }
 
-  // Check for too many URLs (more than 2)
-  const urlCount = countUrls(text);
-  if (urlCount > 2) {
-    return { isSpam: true, reason: `Contains ${urlCount} URLs` };
+  // Check author name for spam patterns
+  if (settings.enableKeywordFilter && containsSpamKeywords(author, settings.customKeywords)) {
+    return { isSpam: true, reason: 'Spam keywords in author name' };
+  }
+
+  // Check for too many URLs
+  if (settings.enableUrlFilter) {
+    const urlCount = countUrls(text);
+    if (urlCount > settings.maxUrls) {
+      return { isSpam: true, reason: `Contains ${urlCount} URLs (max ${settings.maxUrls})` };
+    }
+
+    // Check for very short comments with URLs
+    if (text.length < 20 && urlCount > 0) {
+      return { isSpam: true, reason: 'Very short comment with URL' };
+    }
   }
 
   // Check for repetitive text
-  if (isRepetitive(text)) {
+  if (settings.enableRepetitiveFilter && isRepetitive(text)) {
     return { isSpam: true, reason: 'Repetitive text pattern' };
   }
 
   // Check for all caps
-  if (isAllCaps(text)) {
-    return { isSpam: true, reason: 'All caps text' };
-  }
-
-  // Check for very short comments with URLs
-  if (text.length < 20 && urlCount > 0) {
-    return { isSpam: true, reason: 'Very short comment with URL' };
-  }
-
-  // Check author name for spam patterns
-  if (containsSpamKeywords(author)) {
-    return { isSpam: true, reason: 'Spam keywords in author name' };
+  if (settings.enableCapsFilter && isAllCaps(text, settings.capsPercentage)) {
+    return { isSpam: true, reason: 'Excessive caps text' };
   }
 
   return { isSpam: false };
@@ -117,9 +172,16 @@ export function checkForSpam(text: string, author: string, email?: string): Spam
 export async function checkDuplicateComment(
   text: string,
   author: string,
-  prisma: any
+  prismaClient: any
 ): Promise<boolean> {
-  const recentDuplicate = await prisma.comment.findFirst({
+  const settings = await getSpamFilterSettings();
+
+  // If duplicate filter is disabled, skip check
+  if (!settings.enableDuplicateFilter) {
+    return false;
+  }
+
+  const recentDuplicate = await prismaClient.comment.findFirst({
     where: {
       text,
       author,
