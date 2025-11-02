@@ -20,6 +20,7 @@ function AdminLayout({ children }: AdminLayoutProps) {
     { path: '/admin/categories', label: 'Категории', icon: '🗂️' },
     { path: '/admin/tags', label: 'Теги', icon: '🏷️' },
     { path: '/admin/comments', label: 'Комментарии', icon: '💬' },
+    { path: '/admin/users', label: 'Пользователи', icon: '👥' },
     { path: '/admin/newsletter', label: 'Подписчики', icon: '✉️' },
     { path: '/admin/static-pages', label: 'Статические страницы', icon: '📄' },
     { path: '/admin/settings', label: 'Настройки', icon: '⚙️' }

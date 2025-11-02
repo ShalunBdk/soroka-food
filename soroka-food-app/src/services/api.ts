@@ -30,10 +30,20 @@ export const tokenManager = {
 
   removeToken(): void {
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('current_user');
   },
 
   isAuthenticated(): boolean {
     return !!this.getToken();
+  },
+
+  getCurrentUser(): any | null {
+    const userJson = localStorage.getItem('current_user');
+    return userJson ? JSON.parse(userJson) : null;
+  },
+
+  setCurrentUser(user: any): void {
+    localStorage.setItem('current_user', JSON.stringify(user));
   }
 };
 
@@ -68,8 +78,9 @@ async function apiRequest<T>(
     if (!response.ok) {
       const errorData = hasJson ? await response.json() : { message: response.statusText };
 
-      // Auto-logout on 401 Unauthorized or 403 Forbidden (expired/invalid token)
-      if (response.status === 401 || response.status === 403) {
+      // Auto-logout on 401 Unauthorized (expired/invalid token)
+      // Note: 403 Forbidden means valid token but insufficient permissions, should not logout
+      if (response.status === 401) {
         tokenManager.removeToken();
         window.location.href = '/admin/login';
       }
@@ -108,9 +119,12 @@ export const api = {
         body: JSON.stringify({ username, password }),
       });
 
-      // Save token
+      // Save token and user
       if (response.token) {
         tokenManager.setToken(response.token);
+      }
+      if (response.user) {
+        tokenManager.setCurrentUser(response.user);
       }
 
       return response;
@@ -310,6 +324,13 @@ export const api = {
         return apiRequest(`/admin/comments/${id}`, {
           method: 'DELETE',
         });
+      },
+
+      async bulkAction(ids: number[], action: 'delete' | 'approve' | 'spam' | 'pending'): Promise<{ count: number }> {
+        return apiRequest('/admin/comments/bulk', {
+          method: 'POST',
+          body: JSON.stringify({ ids, action }),
+        });
       }
     },
 
@@ -354,6 +375,52 @@ export const api = {
         return apiRequest(`/admin/static-pages/${id}`, {
           method: 'PUT',
           body: JSON.stringify(data),
+        });
+      }
+    },
+
+    // Admin Users
+    users: {
+      async getAll(role?: string): Promise<any[]> {
+        const query = role ? `?role=${role}` : '';
+        return apiRequest(`/admin/users${query}`);
+      },
+
+      async getById(id: number): Promise<any> {
+        return apiRequest(`/admin/users/${id}`);
+      },
+
+      async create(data: { username: string; email: string; password: string; role: string }): Promise<any> {
+        return apiRequest('/admin/users', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+
+      async update(id: number, data: { username?: string; email?: string; role?: string; active?: boolean }): Promise<any> {
+        return apiRequest(`/admin/users/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+      },
+
+      async delete(id: number): Promise<void> {
+        return apiRequest(`/admin/users/${id}`, {
+          method: 'DELETE',
+        });
+      },
+
+      async changePassword(id: number, newPassword: string): Promise<any> {
+        return apiRequest(`/admin/users/${id}/password`, {
+          method: 'PATCH',
+          body: JSON.stringify({ newPassword }),
+        });
+      },
+
+      async toggleStatus(id: number, active: boolean): Promise<any> {
+        return apiRequest(`/admin/users/${id}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({ active }),
         });
       }
     }

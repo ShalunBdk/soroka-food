@@ -20,6 +20,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     throw new AppError('Invalid credentials', 401);
   }
 
+  // Check if user is active
+  if (!user.active) {
+    throw new AppError('Account is deactivated', 403);
+  }
+
   // Verify password
   const isPasswordValid = await comparePassword(password, user.password);
   if (!isPasswordValid) {
@@ -41,7 +46,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       id: user.id,
       username: user.username,
       email: user.email,
-      role: user.role
+      role: user.role,
+      active: user.active
     }
   });
 };

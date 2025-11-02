@@ -18,12 +18,15 @@ This file provides guidance to Claude Code when working with this repository.
 **Development** (from root): `npm run dev` - starts both frontend (:5173) and backend (:3000)
 **Production**: `npm run build && npm run start:prod` - single server on :3000
 **Database**: `npm run prisma:migrate && npm run prisma:seed`
-**Default credentials**: admin / admin123
+**Default credentials**:
+- **admin** / admin123 (SUPER_ADMIN)
+- **admin2** / admin456 (ADMIN)
+- **moderator** / moderator123 (MODERATOR)
 
 ## Architecture
 
 ### Database Schema (8 tables)
-`users`, `categories`, `recipes` (with JSON: ingredients, instructions, nutrition, tips), `recipe_categories`, `comments` (moderation: APPROVED/PENDING/SPAM), `newsletter_subscribers`, `site_settings`, `static_pages`
+`users` (roles: SUPER_ADMIN/ADMIN/MODERATOR, active status), `categories`, `recipes` (with JSON: ingredients, instructions, nutrition, tips), `recipe_categories`, `comments` (moderation: APPROVED/PENDING/SPAM), `newsletter_subscribers`, `site_settings`, `static_pages`
 
 ### Key Routes
 
@@ -33,14 +36,16 @@ This file provides guidance to Claude Code when working with this repository.
 - `/category/:slug`, `/cuisine/:type`, `/search?q=`, `/best` - Filtering/search
 - `/about`, `/contact`, `/rules`, `/advertising` - Editable static pages
 
-**Admin** (`/admin/*` - JWT protected):
-- Dashboard, Recipes (CRUD), Categories, Tags (rename/delete), Comments (moderation), Newsletter, Static Pages, Settings
+**Admin** (`/admin/*` - JWT protected, role-based access):
+- Dashboard, Recipes (CRUD), Categories, Tags (rename/delete), Comments (moderation), Newsletter (ADMIN+), Users (ADMIN+), Static Pages (ADMIN+), Settings (ADMIN+)
 
 ### API Endpoints
 
 **Public**: `/api/auth/login`, `/api/recipes` (supports ?sort=newest|popular|photo), `/api/recipes/:id`, `/api/recipes/:id/view`, `/api/recipes/search`, `/api/recipes/stats`, `/api/recipes/cuisines/:type`, `/api/categories`, `/api/categories/:slug/recipes`, `/api/settings`, `/api/static-pages/:slug`, `/api/comments`, `/api/newsletter/subscribe`
 
-**Protected** (requires `Authorization: Bearer <token>`): `/api/admin/*` (stats, recipes, categories, tags, comments, newsletter, settings, static-pages), `/api/upload/*` (recipe-image, step-images)
+**Protected** (requires `Authorization: Bearer <token>`):
+- `/api/admin/*` - stats (MOD+), recipes (MOD+), categories (MOD+), tags (MOD+), comments (MOD+), newsletter (ADMIN+), users (ADMIN+), settings (ADMIN+), static-pages (ADMIN+)
+- `/api/upload/*` - recipe-image (MOD+), step-images (MOD+)
 
 ## Database & Types
 
@@ -66,10 +71,10 @@ soroka-food-app/src/
 └── types/           # TypeScript definitions
 
 soroka-food-backend/src/
-├── controllers/     # authController, recipeController, adminController, staticPageController, tagController
-├── routes/          # authRoutes, recipeRoutes, adminRoutes, staticPageRoutes, uploadRoutes
-├── middleware/      # auth, errorHandler, upload (multer), rateLimiter, validation, imageValidation
-├── validators/      # Zod schemas (auth, recipe, comment)
+├── controllers/     # authController, recipeController, adminController, staticPageController, tagController, userController
+├── routes/          # authRoutes, recipeRoutes, adminRoutes, staticPageRoutes, uploadRoutes, userRoutes
+├── middleware/      # auth, errorHandler, upload (multer), rateLimiter, validation, imageValidation, permissions
+├── validators/      # Zod schemas (auth, recipe, comment, user)
 ├── utils/           # jwt, password (bcrypt), imageProcessor (Sharp)
 └── config/          # database.ts (Prisma client)
 ```
@@ -110,6 +115,49 @@ soroka-food-backend/src/
 - **Sidebar**: Dynamic categories (useSidebarData hook), top 5 by recipe count, cuisine types
 - **Stats**: Real-time site statistics (SiteStats component fetches from `/api/recipes/stats`)
 
+### User Management & Role-Based Access Control
+
+**Three-Tier Role Hierarchy**:
+- **SUPER_ADMIN (Главный администратор)**: Full system access including advanced settings, can create ADMIN and MODERATOR users
+- **ADMIN (Администратор)**: All content management rights, can only create MODERATOR users, cannot access advanced settings
+- **MODERATOR (Модератор)**: Content-only access - recipes (CRUD), categories, tags, comment moderation
+
+**Permission Matrix**:
+| Feature | SUPER_ADMIN | ADMIN | MODERATOR |
+|---------|-------------|-------|-----------|
+| Recipes CRUD | ✓ | ✓ | ✓ |
+| Categories CRUD | ✓ | ✓ | ✓ |
+| Tags CRUD | ✓ | ✓ | ✓ |
+| Comments Moderation | ✓ | ✓ | ✓ |
+| Newsletter Management | ✓ | ✓ | ✗ |
+| Static Pages | ✓ | ✓ | ✗ |
+| Site Settings | ✓ | ✓ | ✗ |
+| User Management | ✓ | ✓ (MODERATOR only) | ✗ |
+| Advanced Settings (future) | ✓ | ✗ | ✗ |
+
+**User Management API** (`/api/admin/users/*` - requires ADMIN or above):
+- `GET /api/admin/users` - List all users (optional ?role=SUPER_ADMIN|ADMIN|MODERATOR filter)
+- `GET /api/admin/users/:id` - Get user by ID
+- `POST /api/admin/users` - Create user (role validation: ADMIN can only create MODERATOR)
+- `PUT /api/admin/users/:id` - Update user (prevents self-privilege escalation)
+- `DELETE /api/admin/users/:id` - Delete user (prevents self-deletion, protects last SUPER_ADMIN)
+- `PATCH /api/admin/users/:id/password` - Change password (min 8 chars, uppercase+lowercase+number)
+- `PATCH /api/admin/users/:id/status` - Toggle active/inactive status
+
+**Frontend Components**:
+- `AdminUsers.tsx` (`/admin/users`): User list with role badges, status indicators, filter by role, edit/delete/toggle actions
+- `UserForm.tsx` (`/admin/users/new`, `/admin/users/:id/edit`): Create/edit form with validation, password change modal, random password generator
+
+**Security Features**:
+- **Validation** (`user.validator.ts`): Username 3-50 chars (alphanumeric + underscore), password min 8 chars with uppercase+lowercase+number, email format
+- **Permission Helpers** (`middleware/permissions.ts`): `canManageUser()`, `canCreateUserWithRole()`, `cannotElevateOwnRole()`, `isSelf()`
+- **Middleware** (`middleware/auth.ts`): `requireSuperAdmin`, `requireAdminOrAbove`, `requireModeratorOrAbove`
+- **Protection**: Self-deletion prevention, privilege escalation prevention, last SUPER_ADMIN deletion prevention
+
+**Implementation Files**:
+- Backend: `controllers/userController.ts`, `routes/userRoutes.ts`, `validators/user.validator.ts`, `middleware/permissions.ts`
+- Frontend: `pages/admin/AdminUsers.tsx`, `pages/admin/UserForm.tsx`, updated `services/api.ts`, updated `types/index.ts`
+
 ### Error Handling
 - Backend: `AppError` class, global `errorHandler` middleware, `asyncHandler` wrapper
 - Frontend: `ApiError` class in api.ts, auto-logout on 401
@@ -138,7 +186,7 @@ soroka-food-backend/src/
 
 **Admin vs Public Endpoints**: Public recipe endpoint (`GET /api/recipes/:id`) returns PUBLISHED only. Admin endpoint (`GET /api/admin/recipes/:id`) returns ALL (including DRAFT) for editing. Always use admin endpoint in RecipeForm.
 
-**Security**: All admin routes require JWT + admin/editor role. Passwords bcrypt-hashed (10 rounds). File uploads: images only (jpeg/jpg/png/webp), max 5MB.
+**Security**: All admin routes require JWT + role-based permissions (SUPER_ADMIN/ADMIN/MODERATOR). Passwords bcrypt-hashed (10 rounds). File uploads: images only (jpeg/jpg/png/webp), max 5MB.
 
 ## Security & Production
 
@@ -152,10 +200,11 @@ soroka-food-backend/src/
 - Uploads: 50/hour
 - Comments: 10/15min (spam protection)
 
-**Zod Validation** (auth, recipe, comment validators):
+**Zod Validation** (auth, recipe, comment, user validators):
 - auth.validator.ts: Username 3-50 chars, password min 8 chars (uppercase+lowercase+number), email format
 - recipe.validator.ts: Title 3-255, description 10-1000, cooking time max 1440min, servings max 100, min 1 ingredient/instruction
 - comment.validator.ts: Author 2-100, email valid, rating 1-5, text 10-1000
+- user.validator.ts: Username 3-50 alphanumeric+underscore, password min 8 with uppercase+lowercase+number, role enum validation
 - Returns 400 with field-level errors
 
 **Sharp Image Validation**: Format (jpeg/jpg/png/webp only), max 5000x5000px, integrity check, auto-cleanup invalid files
@@ -206,8 +255,6 @@ MAX_FILE_SIZE=5242880  # 5MB
 
 **Custom Hooks**: `useCategories()`, `useSidebarData()`, `useSettings()`
 
-**Recent Enhancements** (2025-01-26):
-- SettingsContext for performance (1 API call per session vs 8+ per navigation)
-- Dynamic site branding (logo + name from settings, Montserrat typography)
-- Production deployment setup (single-server architecture on :3000)
-- Security features (Helmet, CORS, Rate Limiting, Zod validation, Sharp image validation, DOMPurify XSS protection)
+**Recent Enhancements**:
+- **2025-01-26**: SettingsContext for performance (1 API call per session vs 8+ per navigation), Dynamic site branding (logo + name from settings, Montserrat typography), Production deployment setup (single-server architecture on :3000), Security features (Helmet, CORS, Rate Limiting, Zod validation, Sharp image validation, DOMPurify XSS protection)
+- **2025-01-03**: User Management & Role-Based Access Control - Three-tier role hierarchy (SUPER_ADMIN/ADMIN/MODERATOR), granular permission system, user CRUD API, AdminUsers page, UserForm with password management, role-based route protection, privilege escalation prevention

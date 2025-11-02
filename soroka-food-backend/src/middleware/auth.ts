@@ -44,7 +44,8 @@ export const authenticateToken = (
   }
 };
 
-export const requireAdmin = (
+// Require SUPER_ADMIN role only
+export const requireSuperAdmin = (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -54,10 +55,55 @@ export const requireAdmin = (
     return;
   }
 
-  if (req.user.role !== 'ADMIN' && req.user.role !== 'EDITOR') {
+  if (req.user.role !== 'SUPER_ADMIN') {
+    res.status(403).json({ error: 'Super admin access required' });
+    return;
+  }
+
+  next();
+};
+
+// Require ADMIN or SUPER_ADMIN roles
+export const requireAdminOrAbove = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (!req.user) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
+  if (req.user.role !== 'ADMIN' && req.user.role !== 'SUPER_ADMIN') {
     res.status(403).json({ error: 'Admin access required' });
     return;
   }
 
   next();
 };
+
+// Require MODERATOR, ADMIN, or SUPER_ADMIN roles
+export const requireModeratorOrAbove = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (!req.user) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
+  if (
+    req.user.role !== 'MODERATOR' &&
+    req.user.role !== 'ADMIN' &&
+    req.user.role !== 'SUPER_ADMIN'
+  ) {
+    res.status(403).json({ error: 'Moderator access required' });
+    return;
+  }
+
+  next();
+};
+
+// Legacy alias for backward compatibility - same as requireModeratorOrAbove
+export const requireAdmin = requireModeratorOrAbove;

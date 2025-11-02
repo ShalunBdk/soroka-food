@@ -6,19 +6,50 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Starting database seed...');
 
-  // Create admin user
+  // Create super admin user
   const hashedPassword = await hashPassword('admin123');
-  const admin = await prisma.user.upsert({
+  const superAdmin = await prisma.user.upsert({
     where: { username: 'admin' },
     update: {},
     create: {
       username: 'admin',
       email: 'admin@sorokafood.com',
       password: hashedPassword,
-      role: 'ADMIN'
+      role: 'SUPER_ADMIN',
+      active: true
+    }
+  });
+  console.log('✅ Super Admin user created:', superAdmin.username);
+
+  // Create admin user
+  const adminPassword = await hashPassword('admin456');
+  const admin = await prisma.user.upsert({
+    where: { username: 'admin2' },
+    update: {},
+    create: {
+      username: 'admin2',
+      email: 'admin2@sorokafood.com',
+      password: adminPassword,
+      role: 'ADMIN',
+      active: true
     }
   });
   console.log('✅ Admin user created:', admin.username);
+
+  // Create moderator user
+  const moderatorPassword = await hashPassword('moderator123');
+  const moderator = await prisma.user.upsert({
+    where: { username: 'moderator' },
+    update: {},
+    create: {
+      username: 'moderator',
+      email: 'moderator@sorokafood.com',
+      password: moderatorPassword,
+      role: 'MODERATOR',
+      active: true
+    }
+  });
+  console.log('✅ Moderator user created:', moderator.username);
 
   // Create categories
   const categories = await Promise.all([

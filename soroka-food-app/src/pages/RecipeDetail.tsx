@@ -26,6 +26,7 @@ const RecipeDetail: React.FC = () => {
   const [commentAuthor, setCommentAuthor] = useState('');
   const [commentEmail, setCommentEmail] = useState('');
   const [commentText, setCommentText] = useState('');
+  const [commentWebsite, setCommentWebsite] = useState(''); // Honeypot field
   const [submittingComment, setSubmittingComment] = useState(false);
 
   // Fetch recipe details and comments
@@ -134,7 +135,8 @@ const RecipeDetail: React.FC = () => {
         author: commentAuthor.trim(),
         email: commentEmail.trim(),
         rating,
-        text: commentText.trim()
+        text: commentText.trim(),
+        website: commentWebsite // Honeypot field
       });
 
       toast.success('Спасибо за ваш комментарий! Он появится после модерации.');
@@ -143,6 +145,7 @@ const RecipeDetail: React.FC = () => {
       setCommentAuthor('');
       setCommentEmail('');
       setCommentText('');
+      setCommentWebsite('');
       setRating(0);
     } catch (err: any) {
       // Show detailed validation errors if available
@@ -341,6 +344,18 @@ const RecipeDetail: React.FC = () => {
                     value={commentEmail}
                     onChange={(e) => setCommentEmail(e.target.value)}
                     required
+                  />
+                </div>
+                {/* Honeypot field - hidden from users, visible to bots */}
+                <div style={{ position: 'absolute', left: '-5000px' }} aria-hidden="true">
+                  <label>Website</label>
+                  <input
+                    type="text"
+                    name="website"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={commentWebsite}
+                    onChange={(e) => setCommentWebsite(e.target.value)}
                   />
                 </div>
                 <div className="form-group">

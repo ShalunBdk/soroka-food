@@ -65,11 +65,16 @@ export interface SidebarSection {
 }
 
 // Admin types
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'MODERATOR';
+
 export interface User {
   id: number;
   username: string;
   email: string;
-  role: 'admin' | 'editor';
+  role: UserRole;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AdminStats {

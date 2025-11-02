@@ -24,6 +24,8 @@ import AdminComments from './pages/admin/AdminComments';
 import AdminNewsletter from './pages/admin/AdminNewsletter';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminStaticPages from './pages/admin/AdminStaticPages';
+import AdminUsers from './pages/admin/AdminUsers';
+import UserForm from './pages/admin/UserForm';
 
 import { tokenManager } from './services/api';
 import { SettingsProvider } from './contexts/SettingsContext';
@@ -151,6 +153,27 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <RecipeForm />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminUsers />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users/new" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <UserForm />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users/:id/edit" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <UserForm />
               </AdminLayout>
             </ProtectedRoute>
           } />

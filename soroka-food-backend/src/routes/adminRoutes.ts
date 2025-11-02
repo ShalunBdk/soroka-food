@@ -12,6 +12,7 @@ import {
   getAllComments,
   moderateComment,
   deleteComment,
+  bulkCommentsAction,
   getAllSubscribers,
   deleteSubscriber,
   getSettings,
@@ -27,7 +28,11 @@ import {
   renameTag,
   deleteTag
 } from '../controllers/tagController';
-import { authenticateToken, requireAdmin } from '../middleware/auth';
+import {
+  authenticateToken,
+  requireModeratorOrAbove,
+  requireAdminOrAbove,
+} from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
 import { validate } from '../middleware/validation';
 import { createRecipeSchema, updateRecipeSchema } from '../validators/recipe.validator';
@@ -35,46 +40,48 @@ import { updateCommentStatusSchema } from '../validators/comment.validator';
 
 const router = Router();
 
-// Apply authentication and admin check to all admin routes
+// Apply authentication to all admin routes
 router.use(authenticateToken);
-router.use(requireAdmin);
 
-// Dashboard
-router.get('/stats', asyncHandler(getDashboardStats));
+// Content Management Routes (accessible by MODERATOR, ADMIN, SUPER_ADMIN)
+// Dashboard stats
+router.get('/stats', requireModeratorOrAbove, asyncHandler(getDashboardStats));
 
 // Recipes management
-router.get('/recipes', asyncHandler(getAllRecipes));
-router.get('/recipes/:id', asyncHandler(getRecipeById));
-router.post('/recipes', validate(createRecipeSchema), asyncHandler(createRecipe));
-router.put('/recipes/:id', validate(updateRecipeSchema), asyncHandler(updateRecipe));
-router.delete('/recipes/:id', asyncHandler(deleteRecipe));
+router.get('/recipes', requireModeratorOrAbove, asyncHandler(getAllRecipes));
+router.get('/recipes/:id', requireModeratorOrAbove, asyncHandler(getRecipeById));
+router.post('/recipes', requireModeratorOrAbove, validate(createRecipeSchema), asyncHandler(createRecipe));
+router.put('/recipes/:id', requireModeratorOrAbove, validate(updateRecipeSchema), asyncHandler(updateRecipe));
+router.delete('/recipes/:id', requireModeratorOrAbove, asyncHandler(deleteRecipe));
 
 // Categories management
-router.post('/categories', asyncHandler(createCategory));
-router.put('/categories/:id', asyncHandler(updateCategory));
-router.delete('/categories/:id', asyncHandler(deleteCategory));
+router.post('/categories', requireModeratorOrAbove, asyncHandler(createCategory));
+router.put('/categories/:id', requireModeratorOrAbove, asyncHandler(updateCategory));
+router.delete('/categories/:id', requireModeratorOrAbove, asyncHandler(deleteCategory));
 
 // Comments moderation
-router.get('/comments', asyncHandler(getAllComments));
-router.patch('/comments/:id/status', validate(updateCommentStatusSchema), asyncHandler(moderateComment));
-router.delete('/comments/:id', asyncHandler(deleteComment));
-
-// Newsletter subscribers
-router.get('/newsletter', asyncHandler(getAllSubscribers));
-router.delete('/newsletter/:id', asyncHandler(deleteSubscriber));
-
-// Site settings
-router.get('/settings', asyncHandler(getSettings));
-router.put('/settings', asyncHandler(updateSettings));
+router.get('/comments', requireModeratorOrAbove, asyncHandler(getAllComments));
+router.patch('/comments/:id/status', requireModeratorOrAbove, validate(updateCommentStatusSchema), asyncHandler(moderateComment));
+router.delete('/comments/:id', requireModeratorOrAbove, asyncHandler(deleteComment));
+router.post('/comments/bulk', requireModeratorOrAbove, asyncHandler(bulkCommentsAction));
 
 // Static pages management
-router.get('/static-pages', getAllStaticPages);
-router.get('/static-pages/:id', getStaticPageById);
-router.put('/static-pages/:id', updateStaticPage);
+router.get('/static-pages', requireModeratorOrAbove, getAllStaticPages);
+router.get('/static-pages/:id', requireModeratorOrAbove, getStaticPageById);
+router.put('/static-pages/:id', requireModeratorOrAbove, updateStaticPage);
 
 // Tags management
-router.get('/tags', asyncHandler(getAllTags));
-router.put('/tags/rename', asyncHandler(renameTag));
-router.delete('/tags/:name', asyncHandler(deleteTag));
+router.get('/tags', requireModeratorOrAbove, asyncHandler(getAllTags));
+router.put('/tags/rename', requireModeratorOrAbove, asyncHandler(renameTag));
+router.delete('/tags/:name', requireModeratorOrAbove, asyncHandler(deleteTag));
+
+// Admin-Only Routes (accessible by ADMIN and SUPER_ADMIN only)
+// Newsletter subscribers
+router.get('/newsletter', requireAdminOrAbove, asyncHandler(getAllSubscribers));
+router.delete('/newsletter/:id', requireAdminOrAbove, asyncHandler(deleteSubscriber));
+
+// Site settings (basic + advanced - will be split in future)
+router.get('/settings', requireAdminOrAbove, asyncHandler(getSettings));
+router.put('/settings', requireAdminOrAbove, asyncHandler(updateSettings));
 
 export default router;

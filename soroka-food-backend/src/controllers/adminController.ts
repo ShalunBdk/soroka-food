@@ -401,6 +401,45 @@ export const deleteComment = async (req: Request, res: Response): Promise<void> 
   res.json({ message: 'Comment deleted successfully' });
 };
 
+// Bulk actions for comments
+export const bulkCommentsAction = async (req: Request, res: Response): Promise<void> => {
+  const { ids, action } = req.body;
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    throw new AppError('IDs array is required and must not be empty', 400);
+  }
+
+  if (!['delete', 'approve', 'spam', 'pending'].includes(action)) {
+    throw new AppError('Invalid action. Must be: delete, approve, spam, or pending', 400);
+  }
+
+  const commentIds = ids.map(id => parseInt(id));
+
+  let result;
+  if (action === 'delete') {
+    result = await prisma.comment.deleteMany({
+      where: { id: { in: commentIds } }
+    });
+  } else {
+    const statusMap: Record<string, string> = {
+      approve: 'APPROVED',
+      spam: 'SPAM',
+      pending: 'PENDING'
+    };
+
+    result = await prisma.comment.updateMany({
+      where: { id: { in: commentIds } },
+      data: { status: statusMap[action] as any }
+    });
+  }
+
+  res.json({
+    message: `Bulk action completed successfully`,
+    action,
+    count: result.count
+  });
+};
+
 // Newsletter subscribers management
 export const getAllSubscribers = async (req: Request, res: Response): Promise<void> => {
   const subscribers = await prisma.newsletterSubscriber.findMany({

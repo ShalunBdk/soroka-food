@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { uploadSingle, uploadMultiple } from '../middleware/upload';
-import { authenticateToken, requireAdmin } from '../middleware/auth';
+import { authenticateToken, requireModeratorOrAbove } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
 import { uploadLimiter } from '../middleware/rateLimiter';
 import { validateImage, validateMultipleImages } from '../middleware/imageValidation';
@@ -8,8 +8,9 @@ import { validateImage, validateMultipleImages } from '../middleware/imageValida
 const router = Router();
 
 // Apply authentication to all upload routes
+// All roles (MODERATOR+) can upload images
 router.use(authenticateToken);
-router.use(requireAdmin);
+router.use(requireModeratorOrAbove);
 
 // Upload single recipe image
 router.post('/recipe-image', uploadLimiter, uploadSingle, validateImage, asyncHandler(async (req: Request, res: Response) => {
