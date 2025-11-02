@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 import './AdminCommon.css';
 
 function AdminCategories() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   const [isAdding, setIsAdding] = useState(false);
   const [newCategory, setNewCategory] = useState({ name: '', slug: '', description: '' });
@@ -40,8 +42,9 @@ function AdminCategories() {
         setNewCategory({ name: '', slug: '', description: '' });
         setIsAdding(false);
         fetchCategories();
+        toast.success('Категория успешно создана');
       } catch (err) {
-        alert('Не удалось создать категорию');
+        toast.error('Не удалось создать категорию');
         console.error('Error creating category:', err);
       }
     }
@@ -50,15 +53,16 @@ function AdminCategories() {
   const handleDelete = async (id: number) => {
     const category = categories.find(c => c.id === id);
     if (category && category.recipeCount > 0) {
-      alert(`Невозможно удалить категорию "${category.name}", так как в ней ${category.recipeCount} рецептов`);
+      toast.warning(`Невозможно удалить категорию "${category.name}", так как в ней ${category.recipeCount} рецептов`);
       return;
     }
     if (window.confirm('Удалить категорию?')) {
       try {
         await api.admin.categories.delete(id);
         fetchCategories();
+        toast.success('Категория успешно удалена');
       } catch (err) {
-        alert('Не удалось удалить категорию');
+        toast.error('Не удалось удалить категорию');
         console.error('Error deleting category:', err);
       }
     }

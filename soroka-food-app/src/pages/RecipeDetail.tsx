@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Breadcrumbs from '../components/Breadcrumbs/Breadcrumbs';
 import api from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 import { getImageUrl } from '../utils/image';
 import { shouldCountView } from '../utils/viewTracker';
 import { useSettings } from '../contexts/SettingsContext';
@@ -12,6 +13,7 @@ const RecipeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const recipeId = parseInt(id || '1');
   const { settings } = useSettings();
+  const toast = useToast();
 
   const [recipe, setRecipe] = useState<RecipeDetailType | null>(null);
   const [recipeComments, setRecipeComments] = useState<Comment[]>([]);
@@ -94,8 +96,34 @@ const RecipeDetail: React.FC = () => {
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validation
+    if (!commentAuthor.trim()) {
+      toast.warning('Пожалуйста, введите ваше имя');
+      return;
+    }
+
+    if (commentAuthor.trim().length < 2) {
+      toast.warning('Имя должно содержать минимум 2 символа');
+      return;
+    }
+
+    if (!commentEmail.trim()) {
+      toast.warning('Пожалуйста, введите ваш email');
+      return;
+    }
+
+    if (!commentText.trim()) {
+      toast.warning('Пожалуйста, введите текст комментария');
+      return;
+    }
+
+    if (commentText.trim().length < 10) {
+      toast.warning('Комментарий должен содержать минимум 10 символов');
+      return;
+    }
+
     if (rating === 0) {
-      alert('Пожалуйста, поставьте оценку');
+      toast.warning('Пожалуйста, поставьте оценку');
       return;
     }
 
@@ -103,21 +131,27 @@ const RecipeDetail: React.FC = () => {
     try {
       await api.comments.create({
         recipeId,
-        author: commentAuthor,
-        email: commentEmail,
+        author: commentAuthor.trim(),
+        email: commentEmail.trim(),
         rating,
-        text: commentText
+        text: commentText.trim()
       });
 
-      alert('Спасибо за ваш комментарий! Он появится после модерации.');
+      toast.success('Спасибо за ваш комментарий! Он появится после модерации.');
 
       // Reset form
       setCommentAuthor('');
       setCommentEmail('');
       setCommentText('');
       setRating(0);
-    } catch (err) {
-      alert('Не удалось отправить комментарий. Попробуйте позже.');
+    } catch (err: any) {
+      // Show detailed validation errors if available
+      if (err.data && err.data.errors && Array.isArray(err.data.errors)) {
+        const errorMessages = err.data.errors.map((e: any) => `${e.field}: ${e.message}`).join('\n');
+        toast.error(`Ошибка валидации:\n${errorMessages}`);
+      } else {
+        toast.error(err.message || 'Не удалось отправить комментарий. Попробуйте позже.');
+      }
       console.error('Error submitting comment:', err);
     } finally {
       setSubmittingComment(false);
@@ -150,7 +184,7 @@ const RecipeDetail: React.FC = () => {
     const url = window.location.href;
     try {
       await navigator.clipboard.writeText(url);
-      alert('Ссылка скопирована в буфер обмена!');
+      toast.success('Ссылка скопирована в буфер обмена!');
     } catch (err) {
       // Fallback для старых браузеров
       const textArea = document.createElement('textarea');
@@ -161,9 +195,9 @@ const RecipeDetail: React.FC = () => {
       textArea.select();
       try {
         document.execCommand('copy');
-        alert('Ссылка скопирована в буфер обмена!');
+        toast.success('Ссылка скопирована в буфер обмена!');
       } catch (err) {
-        alert('Не удалось скопировать ссылку');
+        toast.error('Не удалось скопировать ссылку');
       }
       document.body.removeChild(textArea);
     }

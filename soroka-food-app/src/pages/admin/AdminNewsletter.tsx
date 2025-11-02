@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 import './AdminCommon.css';
 
 function AdminNewsletter() {
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'ACTIVE' | 'UNSUBSCRIBED'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,8 +42,9 @@ function AdminNewsletter() {
       try {
         await api.admin.newsletter.delete(id);
         fetchSubscribers();
+        toast.success('Подписчик удален');
       } catch (err) {
-        alert('Не удалось удалить подписчика');
+        toast.error('Не удалось удалить подписчика');
         console.error('Error deleting subscriber:', err);
       }
     }
@@ -49,7 +52,7 @@ function AdminNewsletter() {
 
   const handleExport = () => {
     if (!filteredSubscribers || filteredSubscribers.length === 0) {
-      alert('Нет подписчиков для экспорта');
+      toast.warning('Нет подписчиков для экспорта');
       return;
     }
 
@@ -66,6 +69,7 @@ function AdminNewsletter() {
     a.href = url;
     a.download = 'subscribers.csv';
     a.click();
+    toast.success('CSV файл успешно экспортирован');
   };
 
   if (loading) {

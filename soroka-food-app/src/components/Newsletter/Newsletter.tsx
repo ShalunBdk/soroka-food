@@ -1,27 +1,29 @@
 import React, { useState } from 'react';
 import api from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 import './Newsletter.css';
 
 const Newsletter: React.FC = () => {
   const [email, setEmail] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const toast = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreed) {
-      alert('Пожалуйста, согласитесь с условиями рассылки');
+      toast.warning('Пожалуйста, согласитесь с условиями рассылки');
       return;
     }
 
     setLoading(true);
     try {
       await api.newsletter.subscribe(email);
-      alert('Спасибо за подписку!\nВаш email: ' + email);
+      toast.success(`Спасибо за подписку!\nВаш email: ${email}`);
       setEmail('');
       setAgreed(false);
     } catch (err) {
-      alert('Не удалось подписаться. Возможно, этот email уже зарегистрирован.');
+      toast.error('Не удалось подписаться. Возможно, этот email уже зарегистрирован.');
       console.error('Newsletter subscription error:', err);
     } finally {
       setLoading(false);

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 import './AdminCommon.css';
 
 interface Tag {
@@ -11,6 +12,7 @@ function AdminTags() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   const [editingTag, setEditingTag] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
@@ -51,8 +53,9 @@ function AdminTags() {
         setEditingTag(null);
         setNewName('');
         fetchTags();
+        toast.success('Тег успешно переименован');
       } catch (err) {
-        alert('Не удалось переименовать тег');
+        toast.error('Не удалось переименовать тег');
         console.error('Error renaming tag:', err);
       }
     } else {
@@ -73,8 +76,9 @@ function AdminTags() {
     try {
       await api.admin.tags.delete(name);
       fetchTags();
+      toast.success('Тег успешно удален');
     } catch (err) {
-      alert('Не удалось удалить тег');
+      toast.error('Не удалось удалить тег');
       console.error('Error deleting tag:', err);
     }
   };

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import api from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 import { getImageUrl } from '../../utils/image';
 import type { SiteSettings } from '../../types';
 import './AdminCommon.css';
@@ -26,6 +27,7 @@ function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     fetchSettings();
@@ -68,7 +70,7 @@ function AdminSettings() {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Пожалуйста, выберите изображение');
+      toast.warning('Пожалуйста, выберите изображение');
       return;
     }
 
@@ -76,10 +78,10 @@ function AdminSettings() {
     try {
       const result = await api.upload.recipeImage(file);
       setSettings({ ...settings, logo: result.url });
-      alert('Логотип успешно загружен!');
+      toast.success('Логотип успешно загружен!');
     } catch (err) {
       console.error('Error uploading logo:', err);
-      alert('Не удалось загрузить логотип');
+      toast.error('Не удалось загрузить логотип');
     } finally {
       setUploading(false);
     }
@@ -90,16 +92,16 @@ function AdminSettings() {
 
     // Prevent saving while loading to avoid overwriting with initial state
     if (loading) {
-      alert('Подождите, настройки загружаются...');
+      toast.info('Подождите, настройки загружаются...');
       return;
     }
 
     setSaving(true);
     try {
       await api.admin.settings.update(settings);
-      alert('Настройки сохранены успешно!');
+      toast.success('Настройки сохранены успешно!');
     } catch (err) {
-      alert('Не удалось сохранить настройки');
+      toast.error('Не удалось сохранить настройки');
       console.error('Error saving settings:', err);
     } finally {
       setSaving(false);

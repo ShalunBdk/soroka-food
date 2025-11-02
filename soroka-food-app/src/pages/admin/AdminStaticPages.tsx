@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 import type { StaticPage } from '../../types';
 import './AdminCommon.css';
 
@@ -11,6 +12,7 @@ function AdminStaticPages() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     fetchPages();
@@ -40,7 +42,7 @@ function AdminStaticPages() {
     if (!selectedPage) return;
 
     if (!editedTitle.trim() || !editedContent.trim()) {
-      alert('Пожалуйста, заполните название и содержание');
+      toast.warning('Пожалуйста, заполните название и содержание');
       return;
     }
 
@@ -54,9 +56,9 @@ function AdminStaticPages() {
       // Update in local state
       setPages(pages.map(p => p.id === updated.id ? updated : p));
       setSelectedPage(updated);
-      alert('Страница успешно сохранена!');
+      toast.success('Страница успешно сохранена!');
     } catch (err) {
-      alert('Не удалось сохранить страницу');
+      toast.error('Не удалось сохранить страницу');
       console.error('Error saving page:', err);
     } finally {
       setSaving(false);

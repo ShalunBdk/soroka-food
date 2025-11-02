@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 import './AdminCommon.css';
 
 function AdminComments() {
@@ -8,6 +9,7 @@ function AdminComments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'APPROVED' | 'PENDING' | 'SPAM'>('all');
+  const toast = useToast();
 
   useEffect(() => {
     fetchComments();
@@ -35,8 +37,9 @@ function AdminComments() {
     try {
       await api.admin.comments.updateStatus(id, 'APPROVED');
       fetchComments();
+      toast.success('Комментарий одобрен');
     } catch (err) {
-      alert('Не удалось одобрить комментарий');
+      toast.error('Не удалось одобрить комментарий');
       console.error('Error approving comment:', err);
     }
   };
@@ -45,8 +48,9 @@ function AdminComments() {
     try {
       await api.admin.comments.updateStatus(id, 'SPAM');
       fetchComments();
+      toast.success('Комментарий помечен как спам');
     } catch (err) {
-      alert('Не удалось отметить как спам');
+      toast.error('Не удалось отметить как спам');
       console.error('Error marking as spam:', err);
     }
   };
@@ -56,8 +60,9 @@ function AdminComments() {
       try {
         await api.admin.comments.delete(id);
         fetchComments();
+        toast.success('Комментарий удален');
       } catch (err) {
-        alert('Не удалось удалить комментарий');
+        toast.error('Не удалось удалить комментарий');
         console.error('Error deleting comment:', err);
       }
     }

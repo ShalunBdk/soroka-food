@@ -27,6 +27,7 @@ import AdminStaticPages from './pages/admin/AdminStaticPages';
 
 import { tokenManager } from './services/api';
 import { SettingsProvider } from './contexts/SettingsContext';
+import { ToastProvider } from './contexts/ToastContext';
 import './App.css';
 
 // Protected route component
@@ -38,9 +39,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <SettingsProvider>
-      <Router>
-        <div className="app">
-        <Routes>
+      <ToastProvider>
+        <Router>
+          <div className="app">
+          <Routes>
           {/* Public routes */}
           <Route path="/" element={
             <>
@@ -194,9 +196,10 @@ function App() {
               </AdminLayout>
             </ProtectedRoute>
           } />
-        </Routes>
-      </div>
-    </Router>
+          </Routes>
+        </div>
+      </Router>
+      </ToastProvider>
     </SettingsProvider>
   );
 }

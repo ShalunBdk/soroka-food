@@ -10,7 +10,8 @@ export const createCommentSchema = z.object({
       .max(100, 'Author name must not exceed 100 characters'),
     email: z.string()
       .email('Invalid email address')
-      .max(255, 'Email must not exceed 255 characters'),
+      .max(255, 'Email must not exceed 255 characters')
+      .optional(),
     text: z.string()
       .min(10, 'Comment text must be at least 10 characters')
       .max(1000, 'Comment text must not exceed 1000 characters'),

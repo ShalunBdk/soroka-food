@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 import { getImageUrl } from '../../utils/image';
 import './AdminRecipes.css';
 
@@ -9,6 +10,7 @@ function AdminRecipes() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -70,10 +72,10 @@ function AdminRecipes() {
     if (window.confirm('Вы уверены, что хотите удалить этот рецепт?')) {
       try {
         await api.admin.recipes.delete(id);
-        alert('Рецепт успешно удален');
+        toast.success('Рецепт успешно удален');
         fetchRecipes(); // Refresh the list
       } catch (err) {
-        alert('Не удалось удалить рецепт');
+        toast.error('Не удалось удалить рецепт');
         console.error('Error deleting recipe:', err);
       }
     }

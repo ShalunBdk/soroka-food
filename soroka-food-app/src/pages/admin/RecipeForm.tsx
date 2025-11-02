@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 import { getImageUrl } from '../../utils/image';
 import type { Ingredient, InstructionStep } from '../../types';
 import './RecipeForm.css';
@@ -10,6 +11,7 @@ function RecipeForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(id);
+  const toast = useToast();
 
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -87,7 +89,7 @@ function RecipeForm() {
         }
       } catch (err) {
         console.error('Error fetching data:', err);
-        alert('Не удалось загрузить данные');
+        toast.error('Не удалось загрузить данные');
       } finally {
         setLoading(false);
       }
@@ -160,7 +162,7 @@ function RecipeForm() {
     const trimmedSlug = newCategorySlug.trim();
 
     if (!trimmedName || !trimmedSlug) {
-      alert('Пожалуйста, заполните название и slug категории');
+      toast.warning('Пожалуйста, заполните название и slug категории');
       return;
     }
 
@@ -182,8 +184,9 @@ function RecipeForm() {
       setNewCategoryName('');
       setNewCategorySlug('');
       setShowAddCategory(false);
+      toast.success('Категория успешно создана');
     } catch (err) {
-      alert('Не удалось создать категорию. Возможно, такой slug уже существует.');
+      toast.error('Не удалось создать категорию. Возможно, такой slug уже существует.');
       console.error('Error creating category:', err);
     }
   };
@@ -235,7 +238,7 @@ function RecipeForm() {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Пожалуйста, выберите изображение');
+      toast.warning('Пожалуйста, выберите изображение');
       return;
     }
 
@@ -243,10 +246,10 @@ function RecipeForm() {
     try {
       const result = await api.upload.recipeImage(file);
       setImage(result.url);
-      alert('Изображение успешно загружено!');
+      toast.success('Изображение успешно загружено!');
     } catch (err) {
       console.error('Error uploading image:', err);
-      alert('Не удалось загрузить изображение');
+      toast.error('Не удалось загрузить изображение');
     } finally {
       setUploading(false);
     }
@@ -262,7 +265,7 @@ function RecipeForm() {
     // Check if we would exceed 5 images
     const currentImages = instructions[stepIndex].images || [];
     if (currentImages.length + fileArray.length > 5) {
-      alert('Можно загрузить максимум 5 изображений на шаг');
+      toast.warning('Можно загрузить максимум 5 изображений на шаг');
       return;
     }
 
@@ -275,10 +278,10 @@ function RecipeForm() {
       }
       updated[stepIndex].images = [...updated[stepIndex].images!, ...result.urls];
       setInstructions(updated);
-      alert('Изображения успешно загружены!');
+      toast.success('Изображения успешно загружены!');
     } catch (err) {
       console.error('Error uploading step images:', err);
-      alert('Не удалось загрузить изображения');
+      toast.error('Не удалось загрузить изображения');
     } finally {
       setUploading(false);
     }
@@ -288,7 +291,7 @@ function RecipeForm() {
     e.preventDefault();
 
     if (!title || !description) {
-      alert('Пожалуйста, заполните обязательные поля');
+      toast.warning('Пожалуйста, заполните обязательные поля');
       return;
     }
 
@@ -321,11 +324,11 @@ function RecipeForm() {
       }
 
       const message = status === 'DRAFT' ? 'сохранен как черновик' : (isEdit ? 'обновлен' : 'создан');
-      alert(`Рецепт ${message} успешно!`);
+      toast.success(`Рецепт ${message} успешно!`);
       navigate('/admin/recipes');
     } catch (err) {
       console.error('Error saving recipe:', err);
-      alert('Не удалось сохранить рецепт');
+      toast.error('Не удалось сохранить рецепт');
     } finally {
       setLoading(false);
     }
