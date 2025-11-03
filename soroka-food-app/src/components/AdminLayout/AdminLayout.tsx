@@ -27,7 +27,10 @@ function AdminLayout({ children }: AdminLayoutProps) {
     { path: '/admin/newsletter', label: 'Подписчики', icon: '✉️' },
     { path: '/admin/static-pages', label: 'Статические страницы', icon: '📄' },
     { path: '/admin/settings', label: 'Настройки', icon: '⚙️' },
-    ...(isSuperAdmin ? [{ path: '/admin/spam-filter', label: 'Спам-фильтр', icon: '🛡️' }] : [])
+    ...(isSuperAdmin ? [
+      { path: '/admin/spam-filter', label: 'Спам-фильтр', icon: '🛡️' },
+      { path: '/admin/logs', label: 'Логи администраторов', icon: '📋' }
+    ] : [])
   ];
 
   return (

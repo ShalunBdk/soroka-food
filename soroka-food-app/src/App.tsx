@@ -27,6 +27,7 @@ import AdminStaticPages from './pages/admin/AdminStaticPages';
 import AdminUsers from './pages/admin/AdminUsers';
 import UserForm from './pages/admin/UserForm';
 import AdminSpamFilter from './pages/admin/AdminSpamFilter';
+import AdminLogs from './pages/admin/AdminLogs';
 
 import { tokenManager } from './services/api';
 import { SettingsProvider } from './contexts/SettingsContext';
@@ -224,6 +225,13 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <AdminSpamFilter />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/logs" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminLogs />
               </AdminLayout>
             </ProtectedRoute>
           } />

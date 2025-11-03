@@ -83,6 +83,7 @@ import staticPageRoutes from './routes/staticPageRoutes';
 import adminRoutes from './routes/adminRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import userRoutes from './routes/userRoutes';
+import adminLogRoutes from './routes/adminLogRoutes';
 
 // Public routes
 app.use('/api/auth', authRoutes);
@@ -96,6 +97,7 @@ app.use('/api/static-pages', staticPageRoutes);
 // Protected admin routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/users', userRoutes);
+app.use('/api/admin/logs', adminLogRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // Serve frontend static files in production

@@ -27,6 +27,13 @@
   height: auto;
   border: 1px solid #ddd;
   margin-bottom: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.recipe-image:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .recipe-description {

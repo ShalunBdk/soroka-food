@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateToken } from '../utils/jwt';
 import { AppError } from '../middleware/errorHandler';
+import { logAdminAction, AdminAction, ResourceType } from '../utils/adminLogger';
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   const { username, password } = req.body;
@@ -37,6 +38,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     username: user.username,
     email: user.email,
     role: user.role
+  });
+
+  // Log admin login
+  await logAdminAction({
+    userId: user.id,
+    action: AdminAction.LOGIN,
+    resource: ResourceType.AUTH,
+    req
   });
 
   res.json({

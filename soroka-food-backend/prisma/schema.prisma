@@ -20,6 +20,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  adminLogs AdminLog[]
+
   @@map("users")
 }
 
@@ -27,6 +29,26 @@ enum Role {
   SUPER_ADMIN
   ADMIN
   MODERATOR
+}
+
+// Admin action logs (only accessible to SUPER_ADMIN)
+model AdminLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action     String   // LOGIN, CREATE, UPDATE, DELETE, APPROVE, REJECT, etc.
+  resource   String   // recipes, users, categories, comments, settings, etc.
+  resourceId Int?     // ID of modified resource (if applicable)
+  details    Json?    // Additional details about the action
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+  @@map("admin_logs")
 }
 
 // Recipe categories
@@ -116,12 +138,20 @@ enum CommentStatus {
 
 // Newsletter subscribers
 model NewsletterSubscriber {
-  id             Int                @id @default(autoincrement())
-  email          String             @unique
-  status         SubscriptionStatus @default(ACTIVE)
-  subscribedDate DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  id                 Int                @id @default(autoincrement())
+  email              String             @unique
+  status             SubscriptionStatus @default(ACTIVE)
+  verified           Boolean            @default(false)
+  verificationToken  String?            @unique
+  verifiedAt         DateTime?
+  unsubscribeToken   String             @unique @default(uuid())
+  subscribedDate     DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
+  emailLogs          EmailLog[]
+
+  @@index([verificationToken])
+  @@index([unsubscribeToken])
   @@map("newsletter_subscribers")
 }
 

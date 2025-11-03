@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
+import { logAdminAction, AdminAction, ResourceType } from '../utils/adminLogger';
+import { AuthRequest } from '../middleware/auth';
 
 // Get all unique tags with usage count
 export const getAllTags = async (req: Request, res: Response): Promise<void> => {
@@ -31,7 +33,7 @@ export const getAllTags = async (req: Request, res: Response): Promise<void> => 
 };
 
 // Rename tag across all recipes
-export const renameTag = async (req: Request, res: Response): Promise<void> => {
+export const renameTag = async (req: AuthRequest, res: Response): Promise<void> => {
   const { oldName, newName } = req.body;
 
   if (!oldName || !newName) {
@@ -69,6 +71,19 @@ export const renameTag = async (req: Request, res: Response): Promise<void> => {
     })
   );
 
+  // Log admin action
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.RENAME_TAG,
+    resource: ResourceType.TAGS,
+    details: {
+      oldName,
+      newName,
+      affectedRecipes: recipesWithTag.length
+    },
+    req
+  });
+
   res.json({
     message: `Tag "${oldName}" renamed to "${newName}"`,
     updatedRecipes: recipesWithTag.length
@@ -76,7 +91,7 @@ export const renameTag = async (req: Request, res: Response): Promise<void> => {
 };
 
 // Delete tag from all recipes
-export const deleteTag = async (req: Request, res: Response): Promise<void> => {
+export const deleteTag = async (req: AuthRequest, res: Response): Promise<void> => {
   const { name } = req.params;
 
   if (!name) {
@@ -107,6 +122,18 @@ export const deleteTag = async (req: Request, res: Response): Promise<void> => {
       });
     })
   );
+
+  // Log admin action
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.DELETE_TAG,
+    resource: ResourceType.TAGS,
+    details: {
+      tagName: name,
+      affectedRecipes: recipesWithTag.length
+    },
+    req
+  });
 
   res.json({
     message: `Tag "${name}" deleted`,

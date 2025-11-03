@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
+import { logAdminAction, AdminAction, ResourceType } from '../utils/adminLogger';
+import { AuthRequest } from '../middleware/auth';
 
 // Get spam filter settings
 export const getSpamFilterSettings = async (req: Request, res: Response): Promise<void> => {
@@ -29,7 +31,7 @@ export const getSpamFilterSettings = async (req: Request, res: Response): Promis
 };
 
 // Update spam filter settings
-export const updateSpamFilterSettings = async (req: Request, res: Response): Promise<void> => {
+export const updateSpamFilterSettings = async (req: AuthRequest, res: Response): Promise<void> => {
   const {
     enableKeywordFilter,
     enableUrlFilter,
@@ -48,6 +50,8 @@ export const updateSpamFilterSettings = async (req: Request, res: Response): Pro
   if (capsPercentage !== undefined && (capsPercentage < 0 || capsPercentage > 100)) {
     throw new AppError('capsPercentage must be between 0 and 100', 400);
   }
+
+  const oldSettings = await prisma.spamFilterSettings.findUnique({ where: { id: 1 } });
 
   const settings = await prisma.spamFilterSettings.upsert({
     where: { id: 1 },
@@ -73,11 +77,21 @@ export const updateSpamFilterSettings = async (req: Request, res: Response): Pro
     }
   });
 
+  // Log admin action
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.UPDATE_SPAM_FILTER,
+    resource: ResourceType.SPAM_FILTER,
+    resourceId: 1,
+    details: { changes: req.body, oldSettings, newSettings: settings },
+    req
+  });
+
   res.json({ message: 'Settings updated successfully', settings });
 };
 
 // Add custom spam keyword
-export const addSpamKeyword = async (req: Request, res: Response): Promise<void> => {
+export const addSpamKeyword = async (req: AuthRequest, res: Response): Promise<void> => {
   const { keyword } = req.body;
 
   if (!keyword || typeof keyword !== 'string') {
@@ -119,11 +133,21 @@ export const addSpamKeyword = async (req: Request, res: Response): Promise<void>
     }
   });
 
+  // Log admin action
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.ADD_SPAM_KEYWORD,
+    resource: ResourceType.SPAM_FILTER,
+    resourceId: 1,
+    details: { keyword: trimmedKeyword },
+    req
+  });
+
   res.json({ message: 'Keyword added successfully', settings: updatedSettings });
 };
 
 // Remove custom spam keyword
-export const removeSpamKeyword = async (req: Request, res: Response): Promise<void> => {
+export const removeSpamKeyword = async (req: AuthRequest, res: Response): Promise<void> => {
   const { keyword } = req.params;
 
   if (!keyword) {
@@ -152,6 +176,16 @@ export const removeSpamKeyword = async (req: Request, res: Response): Promise<vo
     data: {
       customKeywords: filteredKeywords
     }
+  });
+
+  // Log admin action
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.REMOVE_SPAM_KEYWORD,
+    resource: ResourceType.SPAM_FILTER,
+    resourceId: 1,
+    details: { keyword: decodedKeyword },
+    req
   });
 
   res.json({ message: 'Keyword removed successfully', settings: updatedSettings });

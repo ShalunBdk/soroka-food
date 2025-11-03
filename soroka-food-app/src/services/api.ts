@@ -458,6 +458,35 @@ export const api = {
           method: 'DELETE',
         });
       }
+    },
+
+    // Admin Logs (SUPER_ADMIN only)
+    logs: {
+      async getAll(params?: {
+        page?: number;
+        limit?: number;
+        userId?: number;
+        action?: string;
+        resource?: string;
+        startDate?: string;
+        endDate?: string;
+      }): Promise<any> {
+        const queryParams = new URLSearchParams();
+        if (params?.page) queryParams.append('page', params.page.toString());
+        if (params?.limit) queryParams.append('limit', params.limit.toString());
+        if (params?.userId) queryParams.append('userId', params.userId.toString());
+        if (params?.action) queryParams.append('action', params.action);
+        if (params?.resource) queryParams.append('resource', params.resource);
+        if (params?.startDate) queryParams.append('startDate', params.startDate);
+        if (params?.endDate) queryParams.append('endDate', params.endDate);
+
+        const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+        return apiRequest(`/admin/logs${query}`);
+      },
+
+      async getStats(days = 30): Promise<any> {
+        return apiRequest(`/admin/logs/stats?days=${days}`);
+      }
     }
   },
 

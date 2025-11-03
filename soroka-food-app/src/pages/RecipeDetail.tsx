@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Breadcrumbs from '../components/Breadcrumbs/Breadcrumbs';
+import ImageModal from '../components/ImageModal/ImageModal';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { getImageUrl } from '../utils/image';
@@ -28,6 +29,11 @@ const RecipeDetail: React.FC = () => {
   const [commentText, setCommentText] = useState('');
   const [commentWebsite, setCommentWebsite] = useState(''); // Honeypot field
   const [submittingComment, setSubmittingComment] = useState(false);
+
+  // Image modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalImageUrl, setModalImageUrl] = useState('');
+  const [modalImageAlt, setModalImageAlt] = useState('');
 
   // Fetch recipe details and comments
   useEffect(() => {
@@ -206,6 +212,17 @@ const RecipeDetail: React.FC = () => {
     }
   };
 
+  // Image modal handlers
+  const handleImageClick = (imageUrl: string, altText: string) => {
+    setModalImageUrl(imageUrl);
+    setModalImageAlt(altText);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
   return (
     <>
       <Breadcrumbs items={breadcrumbItems} />
@@ -235,7 +252,13 @@ const RecipeDetail: React.FC = () => {
             <span>Рейтинг: {'★'.repeat(Math.round(recipe.rating))} ({recipe.rating})</span>
           </div>
 
-          <img src={getImageUrl(recipe.image)} alt={recipe.title} className="recipe-image" />
+          <img
+            src={getImageUrl(recipe.image)}
+            alt={recipe.title}
+            className="recipe-image"
+            onClick={() => handleImageClick(getImageUrl(recipe.image), recipe.title)}
+            style={{ cursor: 'pointer' }}
+          />
 
           <p className="recipe-description">{recipe.description}</p>
 
@@ -291,6 +314,7 @@ const RecipeDetail: React.FC = () => {
                         src={getImageUrl(img)}
                         alt={`Шаг ${step.stepNumber} - Изображение ${idx + 1}`}
                         className="step-image"
+                        onClick={() => handleImageClick(getImageUrl(img), `Шаг ${step.stepNumber} - Изображение ${idx + 1}`)}
                       />
                     ))}
                   </div>
@@ -447,6 +471,13 @@ const RecipeDetail: React.FC = () => {
           </div>
         </aside>
       </div>
+
+      <ImageModal
+        imageUrl={modalImageUrl}
+        altText={modalImageAlt}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
     </>
   );
 };

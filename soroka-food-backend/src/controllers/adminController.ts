@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
+import { logAdminAction, AdminAction, ResourceType, createUpdateDetails, createDeleteDetails, createBulkDetails } from '../utils/adminLogger';
+import { AuthRequest } from '../middleware/auth';
 
 // Get dashboard statistics
 export const getDashboardStats = async (req: Request, res: Response): Promise<void> => {
@@ -160,7 +162,7 @@ export const getAllRecipes = async (req: Request, res: Response): Promise<void> 
   });
 };
 
-export const createRecipe = async (req: Request, res: Response): Promise<void> => {
+export const createRecipe = async (req: AuthRequest, res: Response): Promise<void> => {
   const {
     title,
     description,
@@ -210,10 +212,19 @@ export const createRecipe = async (req: Request, res: Response): Promise<void> =
     });
   }
 
+  // Log admin action
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.CREATE_RECIPE,
+    resource: ResourceType.RECIPES,
+    resourceId: recipe.id,
+    req
+  });
+
   res.status(201).json({ message: 'Recipe created successfully', recipe });
 };
 
-export const updateRecipe = async (req: Request, res: Response): Promise<void> => {
+export const updateRecipe = async (req: AuthRequest, res: Response): Promise<void> => {
   const { id } = req.params;
   const {
     title,
@@ -232,8 +243,8 @@ export const updateRecipe = async (req: Request, res: Response): Promise<void> =
     status
   } = req.body;
 
-  const recipe = await prisma.recipe.findUnique({ where: { id: parseInt(id) } });
-  if (!recipe) {
+  const oldRecipe = await prisma.recipe.findUnique({ where: { id: parseInt(id) } });
+  if (!oldRecipe) {
     throw new AppError('Recipe not found', 404);
   }
 
@@ -272,10 +283,23 @@ export const updateRecipe = async (req: Request, res: Response): Promise<void> =
     }
   }
 
+  // Log admin action
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.UPDATE_RECIPE,
+    resource: ResourceType.RECIPES,
+    resourceId: parseInt(id),
+    details: createUpdateDetails(
+      { title: oldRecipe.title, status: oldRecipe.status },
+      { title: updated.title, status: updated.status }
+    ),
+    req
+  });
+
   res.json({ message: 'Recipe updated successfully', recipe: updated });
 };
 
-export const deleteRecipe = async (req: Request, res: Response): Promise<void> => {
+export const deleteRecipe = async (req: AuthRequest, res: Response): Promise<void> => {
   const { id } = req.params;
 
   const recipe = await prisma.recipe.findUnique({ where: { id: parseInt(id) } });
@@ -285,11 +309,21 @@ export const deleteRecipe = async (req: Request, res: Response): Promise<void> =
 
   await prisma.recipe.delete({ where: { id: parseInt(id) } });
 
+  // Log admin action
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.DELETE_RECIPE,
+    resource: ResourceType.RECIPES,
+    resourceId: parseInt(id),
+    details: createDeleteDetails({ title: recipe.title, id: recipe.id }),
+    req
+  });
+
   res.json({ message: 'Recipe deleted successfully' });
 };
 
 // CRUD for Categories (Admin)
-export const createCategory = async (req: Request, res: Response): Promise<void> => {
+export const createCategory = async (req: AuthRequest, res: Response): Promise<void> => {
   const { name, slug, description } = req.body;
 
   if (!name || !slug) {
@@ -300,25 +334,55 @@ export const createCategory = async (req: Request, res: Response): Promise<void>
     data: { name, slug, description }
   });
 
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.CREATE_CATEGORY,
+    resource: ResourceType.CATEGORIES,
+    resourceId: category.id,
+    req
+  });
+
   res.status(201).json({ message: 'Category created successfully', category });
 };
 
-export const updateCategory = async (req: Request, res: Response): Promise<void> => {
+export const updateCategory = async (req: AuthRequest, res: Response): Promise<void> => {
   const { id } = req.params;
   const { name, slug, description } = req.body;
+
+  const oldCategory = await prisma.category.findUnique({ where: { id: parseInt(id) } });
 
   const category = await prisma.category.update({
     where: { id: parseInt(id) },
     data: { name, slug, description }
   });
 
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.UPDATE_CATEGORY,
+    resource: ResourceType.CATEGORIES,
+    resourceId: parseInt(id),
+    details: createUpdateDetails(oldCategory, category),
+    req
+  });
+
   res.json({ message: 'Category updated successfully', category });
 };
 
-export const deleteCategory = async (req: Request, res: Response): Promise<void> => {
+export const deleteCategory = async (req: AuthRequest, res: Response): Promise<void> => {
   const { id } = req.params;
 
+  const category = await prisma.category.findUnique({ where: { id: parseInt(id) } });
+
   await prisma.category.delete({ where: { id: parseInt(id) } });
+
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.DELETE_CATEGORY,
+    resource: ResourceType.CATEGORIES,
+    resourceId: parseInt(id),
+    details: createDeleteDetails(category),
+    req
+  });
 
   res.json({ message: 'Category deleted successfully' });
 };
@@ -377,7 +441,7 @@ function formatDate(date: Date): string {
   return date.toISOString().split('T')[0];
 }
 
-export const moderateComment = async (req: Request, res: Response): Promise<void> => {
+export const moderateComment = async (req: AuthRequest, res: Response): Promise<void> => {
   const { id } = req.params;
   const { status } = req.body;
 
@@ -385,24 +449,52 @@ export const moderateComment = async (req: Request, res: Response): Promise<void
     throw new AppError('Invalid status', 400);
   }
 
+  const oldComment = await prisma.comment.findUnique({ where: { id: parseInt(id) } });
+
   const comment = await prisma.comment.update({
     where: { id: parseInt(id) },
     data: { status }
   });
 
+  const actionMap: Record<string, AdminAction> = {
+    'APPROVED': AdminAction.APPROVE_COMMENT,
+    'SPAM': AdminAction.MARK_SPAM_COMMENT,
+    'PENDING': AdminAction.REJECT_COMMENT
+  };
+
+  await logAdminAction({
+    userId: req.user!.id,
+    action: actionMap[status],
+    resource: ResourceType.COMMENTS,
+    resourceId: parseInt(id),
+    details: { oldStatus: oldComment?.status, newStatus: status },
+    req
+  });
+
   res.json({ message: 'Comment status updated', comment });
 };
 
-export const deleteComment = async (req: Request, res: Response): Promise<void> => {
+export const deleteComment = async (req: AuthRequest, res: Response): Promise<void> => {
   const { id } = req.params;
 
+  const comment = await prisma.comment.findUnique({ where: { id: parseInt(id) } });
+
   await prisma.comment.delete({ where: { id: parseInt(id) } });
+
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.DELETE_COMMENT,
+    resource: ResourceType.COMMENTS,
+    resourceId: parseInt(id),
+    details: createDeleteDetails(comment),
+    req
+  });
 
   res.json({ message: 'Comment deleted successfully' });
 };
 
 // Bulk actions for comments
-export const bulkCommentsAction = async (req: Request, res: Response): Promise<void> => {
+export const bulkCommentsAction = async (req: AuthRequest, res: Response): Promise<void> => {
   const { ids, action } = req.body;
 
   if (!Array.isArray(ids) || ids.length === 0) {
@@ -433,6 +525,21 @@ export const bulkCommentsAction = async (req: Request, res: Response): Promise<v
     });
   }
 
+  const bulkActionMap: Record<string, AdminAction> = {
+    'delete': AdminAction.BULK_DELETE_COMMENTS,
+    'approve': AdminAction.BULK_APPROVE_COMMENTS,
+    'spam': AdminAction.BULK_SPAM_COMMENTS,
+    'pending': AdminAction.BULK_PENDING_COMMENTS
+  };
+
+  await logAdminAction({
+    userId: req.user!.id,
+    action: bulkActionMap[action],
+    resource: ResourceType.COMMENTS,
+    details: createBulkDetails(commentIds, result.count),
+    req
+  });
+
   res.json({
     message: `Bulk action completed successfully`,
     action,
@@ -456,10 +563,21 @@ export const getAllSubscribers = async (req: Request, res: Response): Promise<vo
   res.json(formattedSubscribers);
 };
 
-export const deleteSubscriber = async (req: Request, res: Response): Promise<void> => {
+export const deleteSubscriber = async (req: AuthRequest, res: Response): Promise<void> => {
   const { id } = req.params;
 
+  const subscriber = await prisma.newsletterSubscriber.findUnique({ where: { id: parseInt(id) } });
+
   await prisma.newsletterSubscriber.delete({ where: { id: parseInt(id) } });
+
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.DELETE_SUBSCRIBER,
+    resource: ResourceType.NEWSLETTER,
+    resourceId: parseInt(id),
+    details: createDeleteDetails(subscriber),
+    req
+  });
 
   res.json({ message: 'Subscriber deleted successfully' });
 };
@@ -495,7 +613,7 @@ export const getSettings = async (req: Request, res: Response): Promise<void> =>
   res.json(formattedSettings);
 };
 
-export const updateSettings = async (req: Request, res: Response): Promise<void> => {
+export const updateSettings = async (req: AuthRequest, res: Response): Promise<void> => {
   const {
     siteName,
     siteDescription,
@@ -536,6 +654,16 @@ export const updateSettings = async (req: Request, res: Response): Promise<void>
       id: 1,
       ...flatData
     }
+  });
+
+  // Log admin action
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.UPDATE_SITE_SETTINGS,
+    resource: ResourceType.SETTINGS,
+    resourceId: 1,
+    details: createUpdateDetails(currentSettings, settings),
+    req
   });
 
   // Return formatted structure to frontend

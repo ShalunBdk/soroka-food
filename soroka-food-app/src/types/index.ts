@@ -135,3 +135,49 @@ export interface StaticPage {
   createdAt: string;
   updatedAt: string;
 }
+
+// Admin logs
+export interface AdminLog {
+  id: number;
+  userId: number;
+  user: {
+    id: number;
+    username: string;
+    role: UserRole;
+  };
+  action: string;
+  resource: string;
+  resourceId?: number;
+  details?: any;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+}
+
+export interface AdminLogsResponse {
+  data: AdminLog[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface AdminLogsStats {
+  totalLogs: number;
+  topActions: Array<{
+    action: string;
+    count: number;
+  }>;
+  topUsers: Array<{
+    userId: number;
+    username: string;
+    role: string;
+    count: number;
+  }>;
+  activityByDay: Array<{
+    date: string;
+    count: number;
+  }>;
+}

@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { asyncHandler } from '../middleware/errorHandler';
 import { AppError } from '../middleware/errorHandler';
+import { logAdminAction, AdminAction, ResourceType, createUpdateDetails } from '../utils/adminLogger';
+import { AuthRequest } from '../middleware/auth';
 
 const prisma = new PrismaClient();
 
@@ -65,7 +67,7 @@ export const getStaticPageById = asyncHandler(async (req: Request, res: Response
  * Update static page (admin)
  * PUT /api/admin/static-pages/:id
  */
-export const updateStaticPage = asyncHandler(async (req: Request, res: Response) => {
+export const updateStaticPage = asyncHandler(async (req: AuthRequest, res: Response) => {
   const id = parseInt(req.params.id);
   const { title, content } = req.body;
 
@@ -94,6 +96,19 @@ export const updateStaticPage = asyncHandler(async (req: Request, res: Response)
       title,
       content
     }
+  });
+
+  // Log admin action
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.UPDATE_STATIC_PAGE,
+    resource: ResourceType.STATIC_PAGES,
+    resourceId: id,
+    details: createUpdateDetails(
+      { title: existingPage.title, slug: existingPage.slug },
+      { title: updatedPage.title, slug: updatedPage.slug }
+    ),
+    req
   });
 
   res.json(updatedPage);

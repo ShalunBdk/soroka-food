@@ -10,6 +10,7 @@ import {
   isSelf,
   UserRole,
 } from '../middleware/permissions';
+import { logAdminAction, AdminAction, ResourceType, createUpdateDetails, createDeleteDetails } from '../utils/adminLogger';
 
 /**
  * Get all users with optional role filter
@@ -140,6 +141,16 @@ export const createUser = async (
     },
   });
 
+  // Log admin action
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.CREATE_USER,
+    resource: ResourceType.USERS,
+    resourceId: newUser.id,
+    details: { username: newUser.username, role: newUser.role },
+    req
+  });
+
   res.status(201).json({
     message: 'User created successfully',
     user: newUser,
@@ -236,6 +247,16 @@ export const updateUser = async (
     },
   });
 
+  // Log admin action
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.UPDATE_USER,
+    resource: ResourceType.USERS,
+    resourceId: userId,
+    details: createUpdateDetails(existingUser, updatedUser),
+    req
+  });
+
   res.json({
     message: 'User updated successfully',
     user: updatedUser,
@@ -297,6 +318,16 @@ export const deleteUser = async (
     where: { id: userId },
   });
 
+  // Log admin action
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.DELETE_USER,
+    resource: ResourceType.USERS,
+    resourceId: userId,
+    details: createDeleteDetails({ username: targetUser.username, role: targetUser.role }),
+    req
+  });
+
   res.json({
     message: 'User deleted successfully',
   });
@@ -345,6 +376,16 @@ export const changePassword = async (
     data: {
       password: hashedPassword,
     },
+  });
+
+  // Log admin action
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.CHANGE_USER_PASSWORD,
+    resource: ResourceType.USERS,
+    resourceId: userId,
+    details: { targetUsername: targetUser.username },
+    req
   });
 
   res.json({
@@ -405,6 +446,20 @@ export const toggleUserStatus = async (
       createdAt: true,
       updatedAt: true,
     },
+  });
+
+  // Log admin action
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.TOGGLE_USER_STATUS,
+    resource: ResourceType.USERS,
+    resourceId: userId,
+    details: {
+      username: targetUser.username,
+      oldStatus: targetUser.active,
+      newStatus: active
+    },
+    req
   });
 
   res.json({

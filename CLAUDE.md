@@ -25,8 +25,8 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## Architecture
 
-### Database Schema (9 tables)
-`users` (roles: SUPER_ADMIN/ADMIN/MODERATOR, active status), `categories`, `recipes` (with JSON: ingredients, instructions, nutrition, tips), `recipe_categories`, `comments` (moderation: APPROVED/PENDING/SPAM), `newsletter_subscribers`, `site_settings`, `static_pages`, `spam_filter_settings` (configurable anti-spam rules)
+### Database Schema (10 tables)
+`users` (roles: SUPER_ADMIN/ADMIN/MODERATOR, active status), `categories`, `recipes` (with JSON: ingredients, instructions, nutrition, tips), `recipe_categories`, `comments` (moderation: APPROVED/PENDING/SPAM), `newsletter_subscribers`, `site_settings`, `static_pages`, `spam_filter_settings` (configurable anti-spam rules), `admin_logs` (audit trail for all admin/moderator actions)
 
 ### Key Routes
 
@@ -37,14 +37,15 @@ This file provides guidance to Claude Code when working with this repository.
 - `/about`, `/contact`, `/rules`, `/advertising` - Editable static pages
 
 **Admin** (`/admin/*` - JWT protected, role-based access):
-- Dashboard, Recipes (CRUD), Categories, Tags (rename/delete), Comments (moderation with bulk actions), Newsletter (ADMIN+), Users (ADMIN+), Static Pages (ADMIN+), Settings (ADMIN+), Spam Filter (SUPER_ADMIN only)
+- Dashboard, Recipes (CRUD), Categories, Tags (rename/delete), Comments (moderation with bulk actions), Newsletter (ADMIN+), Users (ADMIN+), Static Pages (ADMIN+), Settings (ADMIN+), Spam Filter (SUPER_ADMIN only), Admin Logs (SUPER_ADMIN only)
 
 ### API Endpoints
 
 **Public**: `/api/auth/login`, `/api/recipes` (supports ?sort=newest|popular|photo), `/api/recipes/:id`, `/api/recipes/:id/view`, `/api/recipes/search`, `/api/recipes/stats`, `/api/recipes/cuisines/:type`, `/api/categories`, `/api/categories/:slug/recipes`, `/api/settings`, `/api/static-pages/:slug`, `/api/comments`, `/api/newsletter/subscribe`
 
 **Protected** (requires `Authorization: Bearer <token>`):
-- `/api/admin/*` - stats (MOD+), recipes (MOD+), categories (MOD+), tags (MOD+), comments (MOD+ including bulk actions), newsletter (ADMIN+), users (ADMIN+), settings (ADMIN+), static-pages (ADMIN+), spam-filter (SUPER_ADMIN only)
+- `/api/admin/*` - stats (MOD+), recipes (MOD+), categories (MOD+), tags (MOD+), comments (MOD+ including bulk actions), newsletter (ADMIN+), users (ADMIN+), settings (ADMIN+), static-pages (ADMIN+), spam-filter (SUPER_ADMIN only), logs (SUPER_ADMIN only)
+- `/api/admin/logs` - GET / (list logs with filters), GET /stats (statistics)
 - `/api/upload/*` - recipe-image (MOD+), step-images (MOD+)
 
 ## Database & Types
@@ -53,8 +54,8 @@ This file provides guidance to Claude Code when working with this repository.
 **Location**: `soroka-food-backend/.env`
 
 **TypeScript types** (`soroka-food-app/src/types/index.ts`) match Prisma schema
-**Key types**: Recipe, RecipeDetail, Ingredient, InstructionStep, Nutrition, Comment, Category, User, SiteSettings, StaticPage
-**Prisma JSON fields**: ingredients, instructions, nutrition, tips (stored as JSON in PostgreSQL)
+**Key types**: Recipe, RecipeDetail, Ingredient, InstructionStep, Nutrition, Comment, Category, User, SiteSettings, StaticPage, AdminLog, AdminLogsResponse, AdminLogsStats
+**Prisma JSON fields**: ingredients, instructions, nutrition, tips (stored as JSON in PostgreSQL), details (in admin_logs - stores action-specific data)
 
 ## Project Structure
 
@@ -62,7 +63,7 @@ This file provides guidance to Claude Code when working with this repository.
 soroka-food-app/src/
 ├── components/      # Header (dynamic logo/name), Footer, RecipeCard, Pagination, Sidebar, SiteStats
 ├── pages/           # Home, RecipeDetail (with honeypot), CategoryPage, CuisinePage, SearchResults, BestRecipes, static pages
-├── pages/admin/     # Dashboard, AdminRecipes, RecipeForm, AdminStaticPages, AdminSettings, AdminSpamFilter, AdminComments (with bulk actions), etc.
+├── pages/admin/     # Dashboard, AdminRecipes, RecipeForm, AdminStaticPages, AdminSettings, AdminSpamFilter, AdminComments (with bulk actions), AdminUsers, UserForm, AdminLogs, etc.
 ├── hooks/           # useCategories, useSidebarData
 ├── contexts/        # SettingsContext (global state, loads once), ToastContext
 ├── services/        # api.ts (centralized API client with token management)
@@ -71,11 +72,11 @@ soroka-food-app/src/
 └── types/           # TypeScript definitions
 
 soroka-food-backend/src/
-├── controllers/     # authController, recipeController, adminController, staticPageController, tagController, userController, spamFilterController
-├── routes/          # authRoutes, recipeRoutes, adminRoutes, staticPageRoutes, uploadRoutes, userRoutes
+├── controllers/     # authController, recipeController, adminController, staticPageController, tagController, userController, spamFilterController, adminLogController
+├── routes/          # authRoutes, recipeRoutes, adminRoutes, staticPageRoutes, uploadRoutes, userRoutes, adminLogRoutes
 ├── middleware/      # auth, errorHandler, upload (multer), rateLimiter, validation, imageValidation, permissions
 ├── validators/      # Zod schemas (auth, recipe, comment, user)
-├── utils/           # jwt, password (bcrypt), imageProcessor (Sharp), spamFilter
+├── utils/           # jwt, password (bcrypt), imageProcessor (Sharp), spamFilter, adminLogger
 └── config/          # database.ts (Prisma client)
 ```
 
@@ -135,6 +136,7 @@ soroka-food-backend/src/
 | Site Settings | ✓ | ✓ | ✗ |
 | User Management | ✓ | ✓ (MODERATOR only) | ✗ |
 | Spam Filter Management | ✓ | ✗ | ✗ |
+| Admin Action Logs | ✓ | ✗ | ✗ |
 
 **User Management API** (`/api/admin/users/*` - requires ADMIN or above):
 - `GET /api/admin/users` - List all users (optional ?role=SUPER_ADMIN|ADMIN|MODERATOR filter)
@@ -208,6 +210,90 @@ soroka-food-backend/src/
 - SUPER_ADMIN can fine-tune all detection parameters
 - Non-intrusive (legitimate users never see spam protection)
 - Protects against bot spam, manual spam, and mass spam attacks
+
+### Admin Action Logging
+
+**Comprehensive Audit Trail System** (SUPER_ADMIN only, `/admin/logs`):
+
+**Purpose**: Track all administrative and moderator actions for security audit, compliance, and troubleshooting
+
+**What Gets Logged**:
+- **User Actions**: Login, logout, password changes
+- **Content Management**: Recipe CRUD, category CRUD, tag operations (rename/delete)
+- **Moderation**: Comment approval/spam/rejection/deletion, bulk actions
+- **User Management**: User CRUD, role changes, status toggles
+- **Settings**: Site settings updates, spam filter configuration
+- **Static Pages**: Content updates
+- **Newsletter**: Subscriber management
+
+**Logged Data** (AdminLog model):
+- User who performed action (with relation to User table)
+- Action type (enum: LOGIN, CREATE_RECIPE, UPDATE_USER, etc.)
+- Resource type (enum: RECIPES, USERS, COMMENTS, etc.)
+- Resource ID (optional - specific record affected)
+- Details (JSON - action-specific data: old/new values, affected count, etc.)
+- IP address (extracted from request headers, supports X-Forwarded-For)
+- User agent (browser/client info)
+- Timestamp (automatic)
+
+**API Endpoints** (SUPER_ADMIN only):
+- `GET /api/admin/logs` - List logs with filtering and pagination
+  - Query params: `page`, `limit` (1-100), `userId`, `action`, `resource`, `startDate`, `endDate`
+  - Returns: `{logs: AdminLog[], pagination: {...}}`
+- `GET /api/admin/logs/stats` - Dashboard statistics
+  - Returns: total logs, recent activity count, action breakdown, user breakdown
+
+**Frontend Features** (`AdminLogs.tsx`):
+- **Filtering**: By user, action type, resource type, date range
+- **Pagination**: Configurable page size (10/25/50/100 per page)
+- **Expandable Details**: Click row to view full JSON details
+- **User Context**: Shows username and role for each action
+- **Visual Indicators**: Color-coded action badges (green=create, blue=update, red=delete, etc.)
+- **Responsive Design**: Mobile-friendly table with overflow handling
+- **Access Control**: SUPER_ADMIN check with redirect
+
+**Implementation Pattern**:
+Every admin controller method calls `logAdminAction()` after successful operation:
+```typescript
+import { logAdminAction, AdminAction, ResourceType, createUpdateDetails } from '../utils/adminLogger';
+import { AuthRequest } from '../middleware/auth';
+
+export const updateRecipe = async (req: AuthRequest, res: Response) => {
+  const oldRecipe = await prisma.recipe.findUnique({ where: { id } });
+  const updatedRecipe = await prisma.recipe.update({ /* ... */ });
+
+  await logAdminAction({
+    userId: req.user!.id,
+    action: AdminAction.UPDATE_RECIPE,
+    resource: ResourceType.RECIPES,
+    resourceId: id,
+    details: createUpdateDetails(oldRecipe, updatedRecipe),
+    req
+  });
+};
+```
+
+**Helper Functions** (`utils/adminLogger.ts`):
+- `logAdminAction()` - Main logging function
+- `createUpdateDetails()` - Generates before/after comparison
+- `createDeleteDetails()` - Formats deletion info
+- `createBulkDetails()` - Handles bulk operations
+- `getClientIp()` - Extracts IP from headers (supports proxies)
+
+**Database Indexing**:
+Optimized indexes on `userId`, `action`, `resource`, `createdAt` for fast filtering
+
+**Security Features**:
+- SUPER_ADMIN-only access (route-level and component-level checks)
+- Logs cannot be deleted or modified (append-only)
+- Cascade delete when user is deleted (maintains referential integrity)
+- IP tracking for security incidents
+
+**Implementation Files**:
+- Backend: `utils/adminLogger.ts`, `controllers/adminLogController.ts`, `routes/adminLogRoutes.ts`
+- Frontend: `pages/admin/AdminLogs.tsx`, `pages/admin/AdminLogs.css`
+- Database: `prisma/schema.prisma` (AdminLog model)
+- Integration: All admin controllers (auth, admin, user, tag, staticPage, spamFilter)
 
 ### Error Handling
 - Backend: `AppError` class, global `errorHandler` middleware, `asyncHandler` wrapper
@@ -310,3 +396,4 @@ MAX_FILE_SIZE=5242880  # 5MB
 - **2025-01-26**: SettingsContext for performance (1 API call per session vs 8+ per navigation), Dynamic site branding (logo + name from settings, Montserrat typography), Production deployment setup (single-server architecture on :3000), Security features (Helmet, CORS, Rate Limiting, Zod validation, Sharp image validation, DOMPurify XSS protection)
 - **2025-01-03**: User Management & Role-Based Access Control - Three-tier role hierarchy (SUPER_ADMIN/ADMIN/MODERATOR), granular permission system, user CRUD API, AdminUsers page, UserForm with password management, role-based route protection, privilege escalation prevention
 - **2025-01-03**: Anti-Spam System - 6-layer protection (honeypot, auto-detection with 5 filters, bulk moderation, configurable spam filter for SUPER_ADMIN), database-driven settings, custom keyword management, smart UI with optimized slider behavior, handles mass spam attacks efficiently
+- **2025-01-03**: Admin Action Logging - Comprehensive audit trail system (SUPER_ADMIN only), tracks all admin/moderator actions with IP/user agent, filtering by user/action/resource/date, expandable JSON details, append-only logs with database indexing, integrated across all admin controllers
