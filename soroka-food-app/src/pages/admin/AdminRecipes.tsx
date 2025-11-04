@@ -5,6 +5,13 @@ import { useToast } from '../../contexts/ToastContext';
 import { getImageUrl } from '../../utils/image';
 import './AdminRecipes.css';
 
+// Helper function to strip HTML tags and get plain text
+const stripHtml = (html: string): string => {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+};
+
 function AdminRecipes() {
   const [recipes, setRecipes] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -166,7 +173,7 @@ function AdminRecipes() {
                   </td>
                   <td>
                     <strong>{recipe.title}</strong>
-                    <p className="recipe-desc">{recipe.description}</p>
+                    <p className="recipe-desc">{stripHtml(recipe.description)}</p>
                   </td>
                   <td>
                     {Array.isArray(recipe.categories) && recipe.categories.map((cat: any) => (

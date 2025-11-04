@@ -282,7 +282,7 @@ const RecipeDetail: React.FC = () => {
             style={{ cursor: 'pointer' }}
           />
 
-          <p className="recipe-description">{recipe.description}</p>
+          <div className="recipe-description" dangerouslySetInnerHTML={{ __html: recipe.description }} />
 
           <div className="share-section">
             <div className="share-title">Поделиться рецептом:</div>
@@ -327,7 +327,7 @@ const RecipeDetail: React.FC = () => {
             {recipe.instructions.map((step) => (
               <div key={step.stepNumber} className="instruction-step">
                 <div className="step-number">{step.stepNumber}</div>
-                <p className="step-text">{step.text}</p>
+                <div className="step-text" dangerouslySetInnerHTML={{ __html: step.text }} />
                 {step.images && step.images.length > 0 && (
                   <div className="step-images">
                     {step.images.map((img, idx) => (

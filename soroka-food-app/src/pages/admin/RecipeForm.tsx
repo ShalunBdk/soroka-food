@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import api from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 import { getImageUrl } from '../../utils/image';
@@ -365,12 +367,20 @@ function RecipeForm() {
 
             <div className="form-field full-width">
               <label>Краткое описание *</label>
-              <textarea
+              <ReactQuill
+                theme="snow"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-                rows={3}
+                onChange={setDescription}
                 placeholder="Краткое описание рецепта"
+                modules={{
+                  toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link'],
+                    ['clean']
+                  ]
+                }}
               />
             </div>
 
@@ -725,11 +735,18 @@ function RecipeForm() {
           {instructions.map((instruction, index) => (
             <div key={index} className="instruction-field">
               <label>Шаг {instruction.stepNumber}</label>
-              <textarea
+              <ReactQuill
+                theme="snow"
                 value={instruction.text}
-                onChange={(e) => handleInstructionChange(index, e.target.value)}
-                rows={3}
+                onChange={(value) => handleInstructionChange(index, value)}
                 placeholder="Описание шага"
+                modules={{
+                  toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['clean']
+                  ]
+                }}
               />
 
               <div className="step-images-section">
