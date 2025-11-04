@@ -18,6 +18,8 @@ const RecipeDetail: React.FC = () => {
 
   const [recipe, setRecipe] = useState<RecipeDetailType | null>(null);
   const [recipeComments, setRecipeComments] = useState<Comment[]>([]);
+  const [commentsPagination, setCommentsPagination] = useState<any>(null);
+  const [loadingMoreComments, setLoadingMoreComments] = useState(false);
   const [relatedRecipes, setRelatedRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,14 +43,15 @@ const RecipeDetail: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const [recipeData, commentsData, recipesData] = await Promise.all([
+        const [recipeData, commentsResponse, recipesData] = await Promise.all([
           api.recipes.getById(recipeId),
-          api.comments.getByRecipeId(recipeId),
+          api.comments.getByRecipeId(recipeId, 1, 20), // First page, 20 comments
           api.recipes.getAll(1, 10) // Get more related recipes
         ]);
 
         setRecipe(recipeData);
-        setRecipeComments(commentsData);
+        setRecipeComments(commentsResponse.data);
+        setCommentsPagination(commentsResponse.pagination);
         setRelatedRecipes(recipesData.data.filter((r: any) => r.id !== recipeId));
       } catch (err) {
         setError('Не удалось загрузить рецепт');
@@ -60,6 +63,25 @@ const RecipeDetail: React.FC = () => {
 
     fetchData();
   }, [recipeId]);
+
+  // Load more comments (pagination)
+  const loadMoreComments = async () => {
+    if (!commentsPagination || !commentsPagination.hasMore) return;
+
+    setLoadingMoreComments(true);
+    try {
+      const nextPage = commentsPagination.page + 1;
+      const response = await api.comments.getByRecipeId(recipeId, nextPage, 20);
+
+      setRecipeComments(prev => [...prev, ...response.data]);
+      setCommentsPagination(response.pagination);
+    } catch (err) {
+      toast.error('Не удалось загрузить комментарии');
+      console.error('Error loading more comments:', err);
+    } finally {
+      setLoadingMoreComments(false);
+    }
+  };
 
   // Update document title when recipe is loaded
   useEffect(() => {
@@ -426,6 +448,27 @@ const RecipeDetail: React.FC = () => {
                 <p className="comment-text">{comment.text}</p>
               </div>
             ))}
+
+            {/* Load More Comments Button */}
+            {commentsPagination && commentsPagination.hasMore && (
+              <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+                <button
+                  onClick={loadMoreComments}
+                  disabled={loadingMoreComments}
+                  className="submit-btn"
+                  style={{ maxWidth: '300px', margin: '0 auto' }}
+                >
+                  {loadingMoreComments ? 'Загрузка...' : `Загрузить еще (${commentsPagination.total - recipeComments.length})`}
+                </button>
+              </div>
+            )}
+
+            {/* No comments message */}
+            {recipeComments.length === 0 && !loading && (
+              <p style={{ textAlign: 'center', color: '#999', marginTop: '2rem' }}>
+                Пока нет комментариев. Будьте первым!
+              </p>
+            )}
           </div>
         </main>
 

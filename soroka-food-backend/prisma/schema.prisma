@@ -93,6 +93,10 @@ model Recipe {
   categories  RecipeCategory[]
   comments    Comment[]
 
+  @@index([status])
+  @@index([createdAt])
+  @@index([views])
+  @@index([rating])
   @@map("recipes")
 }
 
@@ -110,6 +114,7 @@ model RecipeCategory {
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@id([recipeId, categoryId])
+  @@index([categoryId])
   @@map("recipe_categories")
 }
 
@@ -127,6 +132,9 @@ model Comment {
 
   recipe    Recipe        @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
+  @@index([recipeId])
+  @@index([status])
+  @@index([createdAt])
   @@map("comments")
 }
 

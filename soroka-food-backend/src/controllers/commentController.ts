@@ -102,24 +102,38 @@ function formatDate(date: Date): string {
   return date.toISOString().split('T')[0];
 }
 
-// Get approved comments for a recipe
+// Get approved comments for a recipe with pagination
 export const getRecipeComments = async (req: Request, res: Response): Promise<void> => {
   const { recipeId } = req.params;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = Math.min(parseInt(req.query.limit as string) || 20, 100); // Max 100 per page
+  const skip = (page - 1) * limit;
 
-  const comments = await prisma.comment.findMany({
-    where: {
-      recipeId: parseInt(recipeId),
-      status: 'APPROVED'
-    },
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      author: true,
-      rating: true,
-      text: true,
-      createdAt: true
-    }
-  });
+  // Fetch comments and total count in parallel
+  const [comments, total] = await Promise.all([
+    prisma.comment.findMany({
+      where: {
+        recipeId: parseInt(recipeId),
+        status: 'APPROVED'
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+      select: {
+        id: true,
+        author: true,
+        rating: true,
+        text: true,
+        createdAt: true
+      }
+    }),
+    prisma.comment.count({
+      where: {
+        recipeId: parseInt(recipeId),
+        status: 'APPROVED'
+      }
+    })
+  ]);
 
   const formattedComments = comments.map(comment => ({
     id: comment.id,
@@ -129,5 +143,14 @@ export const getRecipeComments = async (req: Request, res: Response): Promise<vo
     date: formatDate(comment.createdAt)
   }));
 
-  res.json(formattedComments);
+  res.json({
+    data: formattedComments,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasMore: page * limit < total
+    }
+  });
 };

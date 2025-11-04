@@ -1,20 +1,20 @@
 # 🚀 Production Ready План - Soroka Food
 
-**Статус проекта**: 30% готовности к production
-**Последнее обновление**: 2025-10-26
+**Статус проекта**: 54.1% готовности к production
+**Последнее обновление**: 2025-01-06
 
 ---
 
 ## 📊 Общий прогресс
 
 - [x] **Безопасность** (10/10 задач) - ✅ Завершено
-- [ ] **Инфраструктура** (0/6 задач) - 🔴 Критично
-- [ ] **Производительность** (0/7 задач) - 🟡 Высокий приоритет
+- [x] **Инфраструктура** (4/4 задач) - ✅ Завершено
+- [x] **Производительность** (7/7 задач) - ✅ Завершено
 - [ ] **Тестирование** (0/5 задач) - 🟡 Высокий приоритет
 - [ ] **Качество кода** (0/5 задач) - 🟢 Средний приоритет
 - [ ] **Мониторинг** (0/4 задач) - 🟢 Средний приоритет
 
-**Общий прогресс**: 10/37 задач (27.0%)
+**Общий прогресс**: 21/37 задач (54.1%)
 
 ---
 
@@ -498,13 +498,13 @@
 
 #### 9. Environment Variables для фронтенда
 
-- [ ] **День 5.1**: Создать `.env` файлы для фронтенда
+- [x] **День 5.1**: Создать `.env` файлы для фронтенда
   ```bash
   cd soroka-food-app
   touch .env.development .env.production .env.example
   ```
 
-- [ ] **День 5.2**: Настроить environment variables
+- [x] **День 5.2**: Настроить environment variables
   ```env
   # soroka-food-app/.env.development
   VITE_API_URL=http://localhost:3000/api
@@ -519,13 +519,13 @@
   VITE_APP_ENV=development
   ```
 
-- [ ] **День 5.3**: Обновить API client для использования env переменных
+- [x] **День 5.3**: Обновить API client для использования env переменных
   ```typescript
   // soroka-food-app/src/services/api.ts
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
   ```
 
-- [ ] **День 5.4**: Добавить env в .gitignore
+- [x] **День 5.4**: Добавить env в .gitignore
   ```gitignore
   # soroka-food-app/.gitignore
   .env
@@ -547,13 +547,13 @@
 
 #### 10. Логирование (Winston)
 
-- [ ] **День 5.5**: Установить Winston
+- [x] **День 5.5**: Установить Winston
   ```bash
   cd soroka-food-backend
   npm install winston winston-daily-rotate-file
   ```
 
-- [ ] **День 5.6**: Создать logger конфигурацию
+- [x] **День 5.6**: Создать logger конфигурацию
   ```typescript
   // soroka-food-backend/src/config/logger.ts
   import winston from 'winston';
@@ -607,7 +607,7 @@
   }
   ```
 
-- [ ] **День 5.7**: Заменить console.log на logger
+- [x] **День 5.7**: Заменить console.log на logger
   ```typescript
   // soroka-food-backend/src/index.ts
   import { logger } from './config/logger';
@@ -620,7 +620,7 @@
   logger.info(`Environment: ${process.env.NODE_ENV}`);
   ```
 
-- [ ] **День 5.8**: Добавить логирование в error handler
+- [x] **День 5.8**: Добавить логирование в error handler
   ```typescript
   // soroka-food-backend/src/middleware/errorHandler.ts
   import { logger } from '../config/logger';
@@ -644,7 +644,7 @@
   };
   ```
 
-- [ ] **День 5.9**: Создать logs директорию
+- [x] **День 5.9**: Создать logs директорию
   ```bash
   mkdir soroka-food-backend/logs
   echo "*" > soroka-food-backend/logs/.gitignore
@@ -663,7 +663,7 @@
 
 #### 11. Docker контейнеризация
 
-- [ ] **День 6.1**: Создать Dockerfile для backend
+- [x] **День 6.1**: Создать Dockerfile для backend
   ```dockerfile
   # soroka-food-backend/Dockerfile
   FROM node:20-alpine AS builder
@@ -710,7 +710,7 @@
   CMD ["npm", "start"]
   ```
 
-- [ ] **День 6.2**: Создать .dockerignore
+- [x] **День 6.2**: Создать .dockerignore
   ```dockerignore
   # soroka-food-backend/.dockerignore
   node_modules
@@ -726,7 +726,7 @@
   README.md
   ```
 
-- [ ] **День 6.3**: Создать Dockerfile для frontend
+- [x] **День 6.3**: Создать Dockerfile для frontend
   ```dockerfile
   # soroka-food-app/Dockerfile
   FROM node:20-alpine AS builder
@@ -750,7 +750,7 @@
   CMD ["nginx", "-g", "daemon off;"]
   ```
 
-- [ ] **День 6.4**: Создать docker-compose.yml
+- [x] **День 6.4**: Создать docker-compose.yml
   ```yaml
   # docker-compose.yml (в корне проекта)
   version: '3.8'
@@ -819,7 +819,7 @@
     logs:
   ```
 
-- [ ] **День 6.5**: Создать .env для docker-compose
+- [x] **День 6.5**: Создать .env для docker-compose
   ```env
   # .env (в корне проекта)
   DB_PASSWORD=your_secure_password_here
@@ -852,14 +852,14 @@
 
 #### 12. Compression middleware
 
-- [ ] **День 6.7**: Установить compression
+- [x] **День 6.7**: Установить compression
   ```bash
   cd soroka-food-backend
   npm install compression
   npm install --save-dev @types/compression
   ```
 
-- [ ] **День 6.8**: Добавить compression в app
+- [x] **День 6.8**: Добавить compression в app
   ```typescript
   // soroka-food-backend/src/index.ts
   import compression from 'compression';
@@ -879,7 +879,7 @@
 
 #### 13. Оптимизация базы данных
 
-- [ ] **День 7.1**: Добавить индексы в Prisma schema
+- [x] **День 7.1**: Добавить индексы в Prisma schema
   ```prisma
   // soroka-food-backend/prisma/schema.prisma
 
@@ -896,7 +896,7 @@
   model Category {
     // ... существующие поля
 
-    @@index([slug])
+    @@index([slug])  // unique уже создает индекс
     @@map("categories")
   }
 
@@ -908,15 +908,19 @@
     @@index([createdAt])
     @@map("comments")
   }
+
+  model RecipeCategory {
+    @@index([categoryId])  // Для оптимизации обратных запросов
+  }
   ```
 
-- [ ] **День 7.2**: Создать миграцию для индексов
+- [x] **День 7.2**: Создать миграцию для индексов
   ```bash
   cd soroka-food-backend
-  npx prisma migrate dev --name add_performance_indexes
+  npx prisma db push  # Индексы добавлены успешно
   ```
 
-- [ ] **День 7.3**: Оптимизировать Prisma queries с include
+- [x] **День 7.3**: Оптимизировать Prisma queries с include
   ```typescript
   // Пример: включать связи одним запросом вместо N+1
   const recipes = await prisma.recipe.findMany({
@@ -941,14 +945,14 @@
 
 #### 14. Redis кеширование
 
-- [ ] **День 7.4**: Установить ioredis
+- [x] **День 7.4**: Установить ioredis
   ```bash
   cd soroka-food-backend
   npm install ioredis
   npm install --save-dev @types/ioredis
   ```
 
-- [ ] **День 7.5**: Создать Redis client
+- [x] **День 7.5**: Создать Redis client
   ```typescript
   // soroka-food-backend/src/config/redis.ts
   import Redis from 'ioredis';
@@ -962,6 +966,7 @@
       return delay;
     },
     maxRetriesPerRequest: 3,
+    lazyConnect: true, // Graceful fallback if Redis unavailable
   });
 
   redis.on('connect', () => {
@@ -975,7 +980,7 @@
   export default redis;
   ```
 
-- [ ] **День 7.6**: Создать cache middleware
+- [x] **День 7.6**: Создать cache middleware
   ```typescript
   // soroka-food-backend/src/middleware/cache.ts
   import { Request, Response, NextFunction } from 'express';
@@ -1014,7 +1019,7 @@
   };
   ```
 
-- [ ] **День 7.7**: Применить кеширование к публичным routes
+- [x] **День 7.7**: Применить кеширование к публичным routes
   ```typescript
   // soroka-food-backend/src/routes/recipeRoutes.ts
   import { cacheMiddleware } from '../middleware/cache';
@@ -1025,11 +1030,12 @@
   // Кешировать детали рецепта на 10 минут
   router.get('/:id', cacheMiddleware(600), asyncHandler(getRecipeById));
 
+  // soroka-food-backend/src/routes/categoryRoutes.ts
   // Кешировать категории на 30 минут
-  router.get('/categories', cacheMiddleware(1800), asyncHandler(getCategories));
+  router.get('/', cacheMiddleware(1800), asyncHandler(getCategories));
   ```
 
-- [ ] **День 7.8**: Инвалидация кеша при изменениях
+- [x] **День 7.8**: Инвалидация кеша при изменениях
   ```typescript
   // soroka-food-backend/src/utils/cacheInvalidation.ts
   import redis from '../config/redis';
@@ -1071,7 +1077,7 @@
 
 #### 15. Оптимизация изображений
 
-- [ ] **День 8.1**: Настроить автоматический ресайз при загрузке
+- [x] **День 8.1**: Настроить автоматический ресайз при загрузке
   ```typescript
   // soroka-food-backend/src/controllers/uploadController.ts
   import { optimizeImage } from '../utils/imageProcessor';
@@ -1099,7 +1105,7 @@
   };
   ```
 
-- [ ] **День 8.2**: Добавить WebP конвертацию
+- [x] **День 8.2**: Добавить WebP конвертацию
   ```typescript
   // Дополнить imageProcessor.ts
   export const convertToWebP = async (
@@ -1124,7 +1130,7 @@
 
 #### 16. HTTP кеширование (Cache-Control headers)
 
-- [ ] **День 8.3**: Настроить кеширование статики
+- [x] **День 8.3**: Настроить кеширование статики
   ```typescript
   // soroka-food-backend/src/index.ts
 
@@ -1164,7 +1170,7 @@
 
 #### 17. Pagination для комментариев
 
-- [ ] **День 8.4**: Добавить pagination к комментариям
+- [x] **День 8.4**: Добавить pagination к комментариям
   ```typescript
   // soroka-food-backend/src/controllers/commentController.ts
   export const getCommentsByRecipe = async (req, res) => {
@@ -1913,21 +1919,21 @@
 - Валидация файлов: ✅
 
 ### Неделя 2 (Инфраструктура)
-**Прогресс**: 0/4 задачи
+**Прогресс**: 4/4 задачи ✅ ЗАВЕРШЕНО
 
-- Environment Variables: ☐
-- Логирование: ☐
-- Docker: ☐
-- Compression: ☐
+- Environment Variables: ✅
+- Логирование: ✅
+- Docker: ✅
+- Compression: ✅
 
 ### Неделя 3 (Производительность)
-**Прогресс**: 0/5 задач
+**Прогресс**: 5/5 задач ✅ ЗАВЕРШЕНО
 
-- DB индексы: ☐
-- Redis кеш: ☐
-- Оптимизация изображений: ☐
-- HTTP кеш: ☐
-- Pagination комментариев: ☐
+- DB индексы: ✅
+- Redis кеш: ✅
+- Оптимизация изображений: ✅
+- HTTP кеш: ✅
+- Pagination комментариев: ✅
 
 ### Неделя 4 (Тестирование)
 **Прогресс**: 0/3 задачи
@@ -1965,9 +1971,16 @@
 
 ## 📝 NOTES
 
-**Последнее изменение**: 2025-10-26
+**Последнее изменение**: 2025-01-06
 
-**Следующий шаг**: Продолжить с задачи #9 (Environment Variables для фронтенда) - Неделя 2: Инфраструктура
+**Следующий шаг**: Продолжить с задачи #18 (Backend тестирование) - Неделя 4: Тестирование
+
+**Выполнено**:
+- ✅ Задача #13: Оптимизация базы данных - добавлены индексы для Recipe (status, createdAt, views, rating), Comment (recipeId, status, createdAt), RecipeCategory (categoryId)
+- ✅ Задача #14: Redis кеширование - установлен ioredis, создан Redis client с graceful fallback, cache middleware, автоматическая инвалидация при изменениях (recipes/categories/comments)
+- ✅ Задача #15: Оптимизация изображений - создан uploadController.ts с автоматическим ресайзом (max 1200px), создание thumbnails (300px), WebP конвертация для оригинала и thumbnail, обновлен imageProcessor.ts для сохранения оригинального формата (JPEG/PNG/WebP)
+- ✅ Задача #16: HTTP кеширование - настроено кеширование /uploads (1 год, immutable), frontend статики (JS/CSS/fonts 1 год, HTML 1 день, index.html no-cache)
+- ✅ Задача #17: Pagination комментариев - добавлена пагинация с параметрами page/limit (max 100 per page), обновлен API клиент, добавлена кнопка "Загрузить еще" в RecipeDetail.tsx с отображением оставшихся комментариев
 
 **Важные ссылки**:
 - Production domain: TBD

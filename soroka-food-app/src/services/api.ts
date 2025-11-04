@@ -175,7 +175,7 @@ export const api = {
       return apiRequest(`/recipes/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
     },
 
-    async getStats(): Promise<{ recipesCount: number; commentsCount: number; usersCount: number }> {
+    async getStats(): Promise<{ recipesCount: number; commentsCount: number; viewsCount: number }> {
       return apiRequest('/recipes/stats');
     }
   },
@@ -189,8 +189,8 @@ export const api = {
 
   // ========== Comments API ==========
   comments: {
-    async getByRecipeId(recipeId: number): Promise<any[]> {
-      return apiRequest(`/comments/recipe/${recipeId}`);
+    async getByRecipeId(recipeId: number, page = 1, limit = 20): Promise<{ data: any[]; pagination: any }> {
+      return apiRequest(`/comments/recipe/${recipeId}?page=${page}&limit=${limit}`);
     },
 
     async create(data: { recipeId: number; author: string; email: string; rating: number; text: string; website?: string }): Promise<any> {

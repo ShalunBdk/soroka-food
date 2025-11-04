@@ -4,6 +4,7 @@ import { AppError } from '../middleware/errorHandler';
 import { logAdminAction, AdminAction, ResourceType, createUpdateDetails, createDeleteDetails, createBulkDetails } from '../utils/adminLogger';
 import { AuthRequest } from '../middleware/auth';
 import { sendNewRecipeNewsletter } from '../utils/newsletterQueue';
+import { invalidateRecipeCache, invalidateCategoryCache, invalidateCommentCache } from '../utils/cacheInvalidation';
 
 // Get dashboard statistics
 export const getDashboardStats = async (req: Request, res: Response): Promise<void> => {
@@ -222,6 +223,9 @@ export const createRecipe = async (req: AuthRequest, res: Response): Promise<voi
     req
   });
 
+  // Invalidate recipe cache
+  await invalidateRecipeCache();
+
   // Send newsletter if recipe is published
   if (status === 'PUBLISHED') {
     // Send newsletter asynchronously (don't wait for it to complete)
@@ -313,6 +317,9 @@ export const updateRecipe = async (req: AuthRequest, res: Response): Promise<voi
     req
   });
 
+  // Invalidate recipe cache
+  await invalidateRecipeCache(parseInt(id));
+
   // Send newsletter if recipe status changed from DRAFT to PUBLISHED
   if (oldRecipe.status === 'DRAFT' && status === 'PUBLISHED') {
     // Send newsletter asynchronously (don't wait for it to complete)
@@ -352,6 +359,9 @@ export const deleteRecipe = async (req: AuthRequest, res: Response): Promise<voi
     req
   });
 
+  // Invalidate recipe cache
+  await invalidateRecipeCache(parseInt(id));
+
   res.json({ message: 'Recipe deleted successfully' });
 };
 
@@ -374,6 +384,9 @@ export const createCategory = async (req: AuthRequest, res: Response): Promise<v
     resourceId: category.id,
     req
   });
+
+  // Invalidate category cache
+  await invalidateCategoryCache();
 
   res.status(201).json({ message: 'Category created successfully', category });
 };
@@ -398,6 +411,9 @@ export const updateCategory = async (req: AuthRequest, res: Response): Promise<v
     req
   });
 
+  // Invalidate category cache
+  await invalidateCategoryCache();
+
   res.json({ message: 'Category updated successfully', category });
 };
 
@@ -416,6 +432,9 @@ export const deleteCategory = async (req: AuthRequest, res: Response): Promise<v
     details: createDeleteDetails(category),
     req
   });
+
+  // Invalidate category cache
+  await invalidateCategoryCache();
 
   res.json({ message: 'Category deleted successfully' });
 };
@@ -504,6 +523,11 @@ export const moderateComment = async (req: AuthRequest, res: Response): Promise<
     req
   });
 
+  // Invalidate comment cache for the recipe
+  if (comment.recipeId) {
+    await invalidateCommentCache(comment.recipeId);
+  }
+
   res.json({ message: 'Comment status updated', comment });
 };
 
@@ -523,6 +547,11 @@ export const deleteComment = async (req: AuthRequest, res: Response): Promise<vo
     req
   });
 
+  // Invalidate comment cache for the recipe
+  if (comment?.recipeId) {
+    await invalidateCommentCache(comment.recipeId);
+  }
+
   res.json({ message: 'Comment deleted successfully' });
 };
 
@@ -539,6 +568,13 @@ export const bulkCommentsAction = async (req: AuthRequest, res: Response): Promi
   }
 
   const commentIds = ids.map(id => parseInt(id));
+
+  // Get affected recipes before modifying comments
+  const affectedComments = await prisma.comment.findMany({
+    where: { id: { in: commentIds } },
+    select: { recipeId: true }
+  });
+  const affectedRecipeIds = [...new Set(affectedComments.map(c => c.recipeId))];
 
   let result;
   if (action === 'delete') {
@@ -572,6 +608,11 @@ export const bulkCommentsAction = async (req: AuthRequest, res: Response): Promi
     details: createBulkDetails(commentIds, result.count),
     req
   });
+
+  // Invalidate cache for all affected recipes
+  for (const recipeId of affectedRecipeIds) {
+    await invalidateCommentCache(recipeId);
+  }
 
   res.json({
     message: `Bulk action completed successfully`,

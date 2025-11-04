@@ -2,67 +2,51 @@ import sharp from 'sharp';
 import path from 'path';
 
 /**
- * Optimizes an image by resizing and compressing it
- * @param inputPath - Path to the source image
- * @param outputPath - Path where optimized image will be saved
+ * Converts and optimizes an image to WebP format
+ * @param inputPath - Path to the source image (JPEG, PNG, etc.)
+ * @param outputPath - Path where WebP image will be saved (should end with .webp)
  * @param maxWidth - Maximum width in pixels (default: 1200)
- * @returns Path to the optimized image
+ * @param quality - WebP quality 0-100 (default: 85)
+ * @returns Path to the optimized WebP image
  */
-export const optimizeImage = async (
+export const convertToWebP = async (
   inputPath: string,
   outputPath: string,
-  maxWidth: number = 1200
+  maxWidth: number = 1200,
+  quality: number = 85
 ): Promise<string> => {
   await sharp(inputPath)
     .resize(maxWidth, null, {
       fit: 'inside',
       withoutEnlargement: true,
     })
-    .jpeg({ quality: 85, progressive: true })
+    .webp({ quality, effort: 4 }) // effort 4 = good balance between speed and compression
     .toFile(outputPath);
 
   return outputPath;
 };
 
 /**
- * Converts an image to WebP format for better compression
+ * Creates a WebP thumbnail from an image
  * @param inputPath - Path to the source image
- * @param quality - WebP quality (default: 85)
- * @returns Path to the converted WebP image
- */
-export const convertToWebP = async (
-  inputPath: string,
-  quality: number = 85
-): Promise<string> => {
-  const outputPath = inputPath.replace(/\.(jpg|jpeg|png)$/i, '.webp');
-
-  await sharp(inputPath)
-    .webp({ quality })
-    .toFile(outputPath);
-
-  return outputPath;
-};
-
-/**
- * Creates a thumbnail from an image
- * @param inputPath - Path to the source image
+ * @param outputPath - Path where WebP thumbnail will be saved
  * @param thumbnailWidth - Width of thumbnail in pixels (default: 300)
- * @returns Path to the thumbnail
+ * @param quality - WebP quality 0-100 (default: 80)
+ * @returns Path to the WebP thumbnail
  */
-export const createThumbnail = async (
+export const createWebPThumbnail = async (
   inputPath: string,
-  thumbnailWidth: number = 300
+  outputPath: string,
+  thumbnailWidth: number = 300,
+  quality: number = 80
 ): Promise<string> => {
-  const ext = path.extname(inputPath);
-  const thumbnailPath = inputPath.replace(ext, `_thumb${ext}`);
-
   await sharp(inputPath)
     .resize(thumbnailWidth, null, {
       fit: 'inside',
       withoutEnlargement: true,
     })
-    .jpeg({ quality: 80 })
-    .toFile(thumbnailPath);
+    .webp({ quality, effort: 4 })
+    .toFile(outputPath);
 
-  return thumbnailPath;
+  return outputPath;
 };

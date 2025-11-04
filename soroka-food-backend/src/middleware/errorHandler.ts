@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { logger } from '../config/logger';
 
 export class AppError extends Error {
   statusCode: number;
@@ -20,14 +21,12 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ): void => {
-  // Log all errors with explicit stdout
-  process.stdout.write(`\n!!! ERROR HANDLER CAUGHT ERROR !!!\n`);
-  process.stdout.write(`Path: ${req.method} ${req.path}\n`);
-  process.stdout.write(`Error message: ${err.message}\n`);
-  console.error('!!! ERROR HANDLER:', err);
-
   if (err instanceof AppError) {
-    process.stdout.write(`AppError with status code: ${err.statusCode}\n`);
+    logger.warn(`AppError: ${err.message}`, {
+      statusCode: err.statusCode,
+      path: req.path,
+      method: req.method,
+    });
     res.status(err.statusCode).json({
       error: err.message,
       errors: err.errors,
@@ -37,8 +36,12 @@ export const errorHandler = (
   }
 
   // Unknown errors
-  process.stdout.write('Unexpected error (not AppError) - sending 500\n');
-  console.error('Unexpected error:', err);
+  logger.error('Unexpected error:', {
+    error: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+  });
   res.status(500).json({
     error: 'Internal server error',
     message: process.env.NODE_ENV === 'development' ? err.message : undefined,

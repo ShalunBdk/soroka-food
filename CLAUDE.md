@@ -11,6 +11,7 @@ This file provides guidance to Claude Code when working with this repository.
 **Tech Stack**:
 - Frontend: React 19, TypeScript, Vite, React Router 7, Plain CSS
 - Backend: Express 5, Prisma ORM, PostgreSQL, JWT auth, bcrypt
+- Performance: Redis (ioredis) for caching, Database indexes for query optimization
 - Security: Helmet, CORS, Rate Limiting, Zod validation, Sharp image validation, DOMPurify (XSS)
 
 ## Quick Start Commands
@@ -75,16 +76,17 @@ soroka-food-app/src/
 └── types/           # TypeScript definitions
 
 soroka-food-backend/src/
-├── controllers/     # authController, recipeController, adminController, staticPageController, tagController, userController, spamFilterController, adminLogController
+├── controllers/     # authController, recipeController, adminController, staticPageController, tagController, userController, spamFilterController, adminLogController, uploadController
 ├── routes/          # authRoutes, recipeRoutes, adminRoutes, staticPageRoutes, uploadRoutes, userRoutes, adminLogRoutes
-├── middleware/      # auth, errorHandler, upload (multer), rateLimiter, validation, imageValidation, permissions
+├── middleware/      # auth, errorHandler, upload (multer), rateLimiter, validation, imageValidation, permissions, cache
 ├── validators/      # Zod schemas (auth, recipe, comment, user)
-├── utils/           # jwt, password (bcrypt), imageProcessor (Sharp), spamFilter, adminLogger
-└── config/          # database.ts (Prisma client)
+├── utils/           # jwt, password (bcrypt), imageProcessor (Sharp - WebP conversion), spamFilter, adminLogger, cacheInvalidation
+└── config/          # database.ts (Prisma client), redis.ts (Redis client), logger.ts (Winston)
 ```
 
 **Styling**: Plain CSS (component-scoped), Google Fonts Montserrat (logo typography)
-**File uploads**: Multer → `public/uploads/`, max 5MB, jpeg/jpg/png/webp only
+**File uploads**: Multer → `public/uploads/`, max 5MB, jpeg/jpg/png/webp input
+**Image optimization**: Sharp converts all uploads to WebP format - main (1200px max, quality 85) + thumbnail (300px, quality 80)
 **Frontend image helper**: `getImageUrl(path)` - converts relative paths to full URLs
 
 ## Key Implementation Patterns
@@ -112,13 +114,15 @@ soroka-food-backend/src/
 ### Features
 - **Search**: Case-insensitive across title/description/tags, supports pagination
 - **Filtering**: `?sort=newest|popular|photo`, by category/cuisine
-- **Comments**: Submit → Auto spam check → PENDING/SPAM → Admin moderates (APPROVED/PENDING/SPAM) → Display APPROVED only
+- **Comments**:
+  - Submit → Auto spam check → PENDING/SPAM → Admin moderates (APPROVED/PENDING/SPAM) → Display APPROVED only
+  - **Pagination**: `GET /api/comments/recipe/:id?page=1&limit=20` (max 100 per page), "Load More" button shows remaining count
 - **Spam Protection**: Multi-layer defense - honeypot trap, auto-detection (keywords/URLs/caps/repetition/duplicates), bulk moderation actions, configurable filters (SUPER_ADMIN only)
 - **Tags**: Global CRUD system - view usage stats, rename across all recipes, delete with confirmation
 - **Static Pages**: Database-driven, editable via admin with HTML editor, sanitized with DOMPurify
 - **Social Sharing**: VK, Telegram, WhatsApp, copy link (RecipeDetail.tsx:116-174)
 - **Sidebar**: Dynamic categories (useSidebarData hook), top 5 by recipe count, cuisine types
-- **Stats**: Real-time site statistics (SiteStats component fetches from `/api/recipes/stats`)
+- **Stats**: Real-time site statistics (SiteStats component fetches from `/api/recipes/stats` - recipesCount, commentsCount, viewsCount)
 
 ### User Management & Role-Based Access Control
 
@@ -437,6 +441,76 @@ BACKEND_URL=http://localhost:3000
 
 ## Performance & Best Practices
 
+### Database Performance
+**Optimized Indexes** (added to improve query performance):
+- **Recipe**: status, createdAt, views, rating - optimizes sorting/filtering
+- **Comment**: recipeId, status, createdAt - optimizes moderation queries
+- **RecipeCategory**: categoryId - optimizes reverse lookups
+- **AdminLog**: userId, action, resource, createdAt - optimizes audit queries
+- **EmailLog**: subscriberId, status, createdAt - optimizes email history
+- **NewsletterSubscriber**: verificationToken, unsubscribeToken - optimizes token lookups
+
+All indexes created via Prisma schema `@@index()` directive and applied via `npx prisma db push`.
+
+### Redis Caching System
+**Implementation** (`src/config/redis.ts`, `src/middleware/cache.ts`, `src/utils/cacheInvalidation.ts`):
+- **Graceful Fallback**: App works without Redis (lazyConnect, error handling)
+- **Smart Caching**: Only GET requests cached, configurable TTL per endpoint
+- **Auto-Invalidation**: Cache cleared on data changes (create/update/delete)
+
+**Cached Endpoints**:
+- `/api/recipes` - 5 minutes (300s)
+- `/api/recipes/:id` - 10 minutes (600s)
+- `/api/recipes/search` - 5 minutes
+- `/api/recipes/stats` - 10 minutes
+- `/api/recipes/cuisines/:type` - 5 minutes
+- `/api/categories` - 30 minutes (1800s, rarely changes)
+- `/api/categories/:slug/recipes` - 5 minutes
+
+**Cache Invalidation Triggers**:
+- Recipe CRUD → invalidates `/api/recipes*`, `/api/categories*`, `/api/recipes/stats`
+- Category CRUD → invalidates `/api/categories*`, `/api/recipes*`
+- Comment moderation → invalidates `/api/recipes/:recipeId`
+- Bulk comment actions → invalidates all affected recipes
+
+**Usage**:
+```typescript
+// In routes
+import { cacheMiddleware } from '../middleware/cache';
+router.get('/', cacheMiddleware(300), asyncHandler(getRecipes));
+
+// In controllers (auto-invalidation)
+import { invalidateRecipeCache } from '../utils/cacheInvalidation';
+await invalidateRecipeCache(recipeId);
+```
+
+### Image Optimization
+**Implementation** (`src/controllers/uploadController.ts`, `src/utils/imageProcessor.ts`):
+- **WebP-Only Approach**: Every uploaded image is converted to WebP format (97%+ browser support, 25-35% smaller than JPEG)
+- **Automatic Processing**: Generates 2 versions per upload
+  - Main image (max 1200px width, quality 85, effort 4)
+  - Thumbnail (300px width, quality 80, effort 4)
+- **Format Support**: Accepts JPEG/PNG/WebP uploads, all converted to WebP output
+- **File Cleanup**: Original uploaded files deleted after conversion (saves ~50% disk space vs storing multiple formats)
+- **API Response**: Returns `{url: string, thumbnail: string}` for single image, `{urls: string[], images: [{url, thumbnail}]}` for multiple
+- **Sharp Processing**: `convertToWebP()` and `createWebPThumbnail()` functions with optimal compression balance (effort 4)
+
+### HTTP Caching
+**Static File Caching** (configured in `src/index.ts`):
+- **Uploads** (`/uploads`): 1 year cache, immutable, ETag, Last-Modified
+- **Frontend Assets** (production):
+  - JS/CSS/fonts: 1 year cache, immutable (content-hashed filenames)
+  - HTML files: 1 day cache
+  - `index.html`: no-cache (SPA entry point must always be fresh)
+- **Benefits**: Reduces server load, improves page load times, lower bandwidth usage
+
+### Comments Pagination
+**Implementation** (`src/controllers/commentController.ts`, frontend `RecipeDetail.tsx`):
+- **Backend**: Parallel queries (data + count) with `page`/`limit` parameters (max 100 per page)
+- **Frontend**: "Load More" button with remaining count display
+- **Response Format**: `{data: Comment[], pagination: {page, limit, total, totalPages, hasMore}}`
+- **Default**: 20 comments per page, loads additional pages on demand
+
 ### SettingsContext - Global State
 - Settings loaded once on app mount via `SettingsContext.tsx`
 - Prevents redundant API calls (was 8+ per navigation, now 1 per session)
@@ -495,6 +569,10 @@ PORT=3000
 NODE_ENV=development|production
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000  # Production: set your domains
 MAX_FILE_SIZE=5242880  # 5MB
+REDIS_URL=redis://localhost:6379  # Optional - app works without Redis with graceful fallback
+EMAIL_ENCRYPTION_KEY=<32-character-random-string>  # For SMTP password encryption
+FRONTEND_URL=http://localhost:5173  # For email verification links
+BACKEND_URL=http://localhost:3000  # For API URLs in emails
 ```
 
 ### Production Checklist
@@ -529,6 +607,8 @@ MAX_FILE_SIZE=5242880  # 5MB
 **Custom Hooks**: `useCategories()`, `useSidebarData()`, `useSettings()`
 
 **Recent Enhancements**:
+- **2025-01-06**: Image System Optimization - Migrated to WebP-only image format (saves 50% disk space, 97%+ browser support, 25-35% smaller than JPEG), automatic conversion with Sharp (main 1200px + thumbnail 300px, effort 4), original files deleted after processing, simplified imageProcessor.ts with 2 functions (convertToWebP, createWebPThumbnail), backward-compatible API (url/thumbnail response), HTTP caching for static files (uploads 1 year immutable), comments pagination (20 per page with "Load More")
+- **2025-01-05**: Performance Optimization - Database indexes (Recipe, Comment, RecipeCategory for faster queries), Redis caching system (5-30 min TTL on public endpoints with auto-invalidation), graceful fallback when Redis unavailable, smart cache invalidation on CRUD operations
 - **2025-01-26**: SettingsContext for performance (1 API call per session vs 8+ per navigation), Dynamic site branding (logo + name from settings, Montserrat typography), Production deployment setup (single-server architecture on :3000), Security features (Helmet, CORS, Rate Limiting, Zod validation, Sharp image validation, DOMPurify XSS protection)
 - **2025-01-03**: User Management & Role-Based Access Control - Three-tier role hierarchy (SUPER_ADMIN/ADMIN/MODERATOR), granular permission system, user CRUD API, AdminUsers page, UserForm with password management, role-based route protection, privilege escalation prevention
 - **2025-01-03**: Anti-Spam System - 6-layer protection (honeypot, auto-detection with 5 filters, bulk moderation, configurable spam filter for SUPER_ADMIN), database-driven settings, custom keyword management, smart UI with optimized slider behavior, handles mass spam attacks efficiently

@@ -1,9 +1,11 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import path from 'path';
 import { errorHandler } from './middleware/errorHandler';
+import { logger } from './config/logger';
 
 // Load environment variables
 dotenv.config();
@@ -25,6 +27,9 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false, // Allow loading external images
   crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow images to be loaded cross-origin
 }));
+
+// Compression middleware
+app.use(compression());
 
 // CORS Configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173'];
@@ -55,13 +60,18 @@ app.use(express.urlencoded({ extended: true }));
 import { apiLimiter } from './middleware/rateLimiter';
 app.use('/api/', apiLimiter);
 
-// Serve static files (uploaded images) with CORS headers
+// Serve static files (uploaded images) with CORS headers and aggressive caching
 app.use('/uploads', (req, res, next) => {
   // Set CORS headers for static files
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   next();
-}, express.static(path.join(__dirname, '../public/uploads')));
+}, express.static(path.join(__dirname, '../public/uploads'), {
+  maxAge: '1y', // Cache images for 1 year (they have unique filenames)
+  immutable: true, // Images never change (unique filenames per upload)
+  etag: true, // Enable ETag for cache validation
+  lastModified: true, // Enable Last-Modified header
+}));
 
 // Health check route
 app.get('/api/health', (req: Request, res: Response) => {
@@ -110,8 +120,21 @@ app.use('/api/upload', uploadRoutes);
 if (process.env.NODE_ENV === 'production') {
   const frontendPath = path.join(__dirname, '../../soroka-food-app/dist');
 
-  // Serve static files
-  app.use(express.static(frontendPath));
+  // Cache static assets with hashes aggressively (JS, CSS, fonts)
+  app.use(/\.(js|css|woff|woff2|ttf|eot|svg|ico)$/,
+    express.static(frontendPath, {
+      maxAge: '1y', // Cache for 1 year (files have content hashes)
+      immutable: true, // These files never change (content-based hashes)
+      etag: true,
+    })
+  );
+
+  // Serve HTML and other files with shorter cache (1 day)
+  app.use(express.static(frontendPath, {
+    maxAge: '1d', // Cache HTML for 1 day
+    etag: true,
+    lastModified: true,
+  }));
 
   // SPA fallback - serve index.html for all non-API routes
   app.use((req: Request, res: Response) => {
@@ -120,6 +143,8 @@ if (process.env.NODE_ENV === 'production') {
       res.status(404).json({ error: 'Route not found' });
     } else {
       // For all other routes, serve index.html (SPA fallback)
+      // No caching for SPA entry point
+      res.setHeader('Cache-Control', 'no-cache');
       res.sendFile(path.join(frontendPath, 'index.html'));
     }
   });
@@ -138,15 +163,15 @@ import { initializeDefaultTemplates } from './utils/emailTemplates';
 
 // Start server and keep the instance to prevent process exit
 const server = app.listen(PORT, async () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📝 Environment: ${process.env.NODE_ENV}`);
+  logger.info(`Server running on http://localhost:${PORT}`);
+  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
 
   // Initialize default email templates
   try {
     await initializeDefaultTemplates();
-    console.log('✉️  Email templates initialized');
+    logger.info('Email templates initialized');
   } catch (error) {
-    console.error('Failed to initialize email templates:', error);
+    logger.error('Failed to initialize email templates:', error);
   }
 });
 
