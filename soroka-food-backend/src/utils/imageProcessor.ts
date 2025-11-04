@@ -16,6 +16,7 @@ export const convertToWebP = async (
   quality: number = 85
 ): Promise<string> => {
   await sharp(inputPath)
+    .rotate() // Auto-rotate based on EXIF orientation
     .resize(maxWidth, null, {
       fit: 'inside',
       withoutEnlargement: true,
@@ -41,6 +42,7 @@ export const createWebPThumbnail = async (
   quality: number = 80
 ): Promise<string> => {
   await sharp(inputPath)
+    .rotate() // Auto-rotate based on EXIF orientation
     .resize(thumbnailWidth, null, {
       fit: 'inside',
       withoutEnlargement: true,
