@@ -11,6 +11,7 @@ function AdminLayout({ children }: AdminLayoutProps) {
   const navigate = useNavigate();
   const currentUser = tokenManager.getCurrentUser();
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isAdminOrAbove = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN';
 
   const handleLogout = () => {
     localStorage.removeItem('admin_logged_in');
@@ -25,9 +26,13 @@ function AdminLayout({ children }: AdminLayoutProps) {
     { path: '/admin/comments', label: 'Комментарии', icon: '💬' },
     { path: '/admin/users', label: 'Пользователи', icon: '👥' },
     { path: '/admin/newsletter', label: 'Подписчики', icon: '✉️' },
+    ...(isAdminOrAbove ? [
+      { path: '/admin/email-logs', label: 'Email логи', icon: '📧' }
+    ] : []),
     { path: '/admin/static-pages', label: 'Статические страницы', icon: '📄' },
     { path: '/admin/settings', label: 'Настройки', icon: '⚙️' },
     ...(isSuperAdmin ? [
+      { path: '/admin/smtp', label: 'SMTP настройки', icon: '📬' },
       { path: '/admin/spam-filter', label: 'Спам-фильтр', icon: '🛡️' },
       { path: '/admin/logs', label: 'Логи администраторов', icon: '📋' }
     ] : [])

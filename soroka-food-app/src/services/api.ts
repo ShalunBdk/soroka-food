@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 // API Error class
 export class ApiError extends Error {
@@ -86,7 +86,7 @@ async function apiRequest<T>(
       }
 
       throw new ApiError(
-        errorData.message || 'An error occurred',
+        errorData.error || errorData.message || 'An error occurred',
         response.status,
         errorData
       );
@@ -197,16 +197,6 @@ export const api = {
       return apiRequest('/comments', {
         method: 'POST',
         body: JSON.stringify(data),
-      });
-    }
-  },
-
-  // ========== Newsletter API ==========
-  newsletter: {
-    async subscribe(email: string): Promise<{ message: string }> {
-      return apiRequest('/newsletter/subscribe', {
-        method: 'POST',
-        body: JSON.stringify({ email }),
       });
     }
   },
@@ -487,6 +477,130 @@ export const api = {
       async getStats(days = 30): Promise<any> {
         return apiRequest(`/admin/logs/stats?days=${days}`);
       }
+    },
+
+    // Admin SMTP Settings (SUPER_ADMIN only)
+    smtp: {
+      async getSettings(): Promise<any> {
+        return apiRequest('/admin/smtp');
+      },
+
+      async updateSettings(data: {
+        host?: string;
+        port?: number;
+        secure?: boolean;
+        user?: string;
+        password?: string;
+        fromEmail?: string;
+        fromName?: string;
+        enabled?: boolean;
+      }): Promise<any> {
+        return apiRequest('/admin/smtp', {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+      },
+
+      async testConnection(): Promise<{ success: boolean; message: string }> {
+        return apiRequest('/admin/smtp/test', {
+          method: 'POST',
+        });
+      }
+    },
+
+    // Admin Email Templates (SUPER_ADMIN only)
+    emailTemplates: {
+      async getAll(): Promise<any[]> {
+        return apiRequest('/admin/email-templates');
+      },
+
+      async getById(id: number): Promise<any> {
+        return apiRequest(`/admin/email-templates/${id}`);
+      },
+
+      async create(data: {
+        name: string;
+        subject: string;
+        bodyHtml: string;
+        bodyText?: string;
+        variables?: string[];
+        isDefault?: boolean;
+        type: string;
+      }): Promise<any> {
+        return apiRequest('/admin/email-templates', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+
+      async update(id: number, data: any): Promise<any> {
+        return apiRequest(`/admin/email-templates/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+      },
+
+      async delete(id: number): Promise<void> {
+        return apiRequest(`/admin/email-templates/${id}`, {
+          method: 'DELETE',
+        });
+      },
+
+      async preview(id: number, testData?: any): Promise<{ subject: string; html: string; text: string }> {
+        return apiRequest(`/admin/email-templates/${id}/preview`, {
+          method: 'POST',
+          body: JSON.stringify({ testData }),
+        });
+      },
+
+      async getVariables(): Promise<any> {
+        return apiRequest('/admin/email-templates/variables');
+      }
+    },
+
+    // Admin Email Logs (ADMIN+ only)
+    emailLogs: {
+      async getAll(params?: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        templateId?: number;
+        startDate?: string;
+        endDate?: string;
+      }): Promise<any> {
+        const queryParams = new URLSearchParams();
+        if (params?.page) queryParams.append('page', params.page.toString());
+        if (params?.limit) queryParams.append('limit', params.limit.toString());
+        if (params?.status) queryParams.append('status', params.status);
+        if (params?.templateId) queryParams.append('templateId', params.templateId.toString());
+        if (params?.startDate) queryParams.append('startDate', params.startDate);
+        if (params?.endDate) queryParams.append('endDate', params.endDate);
+
+        const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+        return apiRequest(`/admin/email-logs${query}`);
+      },
+
+      async getStats(): Promise<any> {
+        return apiRequest('/admin/email-logs/stats');
+      }
+    }
+  },
+
+  // ========== Newsletter API (Public) ==========
+  newsletter: {
+    async subscribe(email: string): Promise<{ message: string }> {
+      return apiRequest('/newsletter/subscribe', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+    },
+
+    async verify(token: string): Promise<{ message: string }> {
+      return apiRequest(`/newsletter/verify/${token}`);
+    },
+
+    async unsubscribe(token: string): Promise<{ message: string }> {
+      return apiRequest(`/newsletter/unsubscribe/${token}`);
     }
   },
 

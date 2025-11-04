@@ -9,7 +9,7 @@ function AdminNewsletter() {
   const [error, setError] = useState<string | null>(null);
   const toast = useToast();
 
-  const [statusFilter, setStatusFilter] = useState<'all' | 'ACTIVE' | 'UNSUBSCRIBED'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'PENDING' | 'ACTIVE' | 'UNSUBSCRIBED'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -108,6 +108,7 @@ function AdminNewsletter() {
             className="filter-select"
           >
             <option value="all">Все ({Array.isArray(subscribers) ? subscribers.length : 0})</option>
+            <option value="PENDING">Ожидают подтверждения ({Array.isArray(subscribers) ? subscribers.filter(s => s.status === 'PENDING').length : 0})</option>
             <option value="ACTIVE">Активные ({Array.isArray(subscribers) ? subscribers.filter(s => s.status === 'ACTIVE').length : 0})</option>
             <option value="UNSUBSCRIBED">Отписанные ({Array.isArray(subscribers) ? subscribers.filter(s => s.status === 'UNSUBSCRIBED').length : 0})</option>
           </select>
@@ -126,6 +127,7 @@ function AdminNewsletter() {
               <th>Email</th>
               <th style={{ width: '150px' }}>Дата подписки</th>
               <th style={{ width: '120px' }}>Статус</th>
+              <th style={{ width: '140px' }}>Подтверждение</th>
               <th style={{ width: '100px' }}>Действия</th>
             </tr>
           </thead>
@@ -134,11 +136,28 @@ function AdminNewsletter() {
               <tr key={subscriber.id}>
                 <td>{subscriber.id}</td>
                 <td><strong>{subscriber.email}</strong></td>
-                <td>{new Date(subscriber.createdAt).toLocaleDateString()}</td>
+                <td>{new Date(subscriber.subscribedDate || subscriber.createdAt).toLocaleDateString()}</td>
                 <td>
-                  <span className={`status-badge ${subscriber.status === 'ACTIVE' ? 'status-approved' : 'status-pending'}`}>
-                    {subscriber.status === 'ACTIVE' ? 'Активен' : 'Отписан'}
+                  <span className={`status-badge ${
+                    subscriber.status === 'ACTIVE' ? 'status-approved' :
+                    subscriber.status === 'PENDING' ? 'status-pending' :
+                    'status-spam'
+                  }`}>
+                    {subscriber.status === 'ACTIVE' ? 'Активен' :
+                     subscriber.status === 'PENDING' ? 'Ожидает' :
+                     'Отписан'}
                   </span>
+                </td>
+                <td>
+                  {subscriber.verified ? (
+                    <span className="status-badge status-approved" title={subscriber.verifiedAt ? `Подтверждено: ${new Date(subscriber.verifiedAt).toLocaleString()}` : 'Подтверждено'}>
+                      ✓ Подтверждён
+                    </span>
+                  ) : (
+                    <span className="status-badge status-spam" title="Email не подтверждён">
+                      ✗ Не подтверждён
+                    </span>
+                  )}
                 </td>
                 <td>
                   <div className="table-actions">

@@ -84,6 +84,9 @@ import adminRoutes from './routes/adminRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import userRoutes from './routes/userRoutes';
 import adminLogRoutes from './routes/adminLogRoutes';
+import smtpRoutes from './routes/smtpRoutes';
+import emailTemplateRoutes from './routes/emailTemplateRoutes';
+import emailLogRoutes from './routes/emailLogRoutes';
 
 // Public routes
 app.use('/api/auth', authRoutes);
@@ -98,6 +101,9 @@ app.use('/api/static-pages', staticPageRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/users', userRoutes);
 app.use('/api/admin/logs', adminLogRoutes);
+app.use('/api/admin/smtp', smtpRoutes);
+app.use('/api/admin/email-templates', emailTemplateRoutes);
+app.use('/api/admin/email-logs', emailLogRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // Serve frontend static files in production
@@ -127,10 +133,21 @@ if (process.env.NODE_ENV === 'production') {
 // Global error handler
 app.use(errorHandler);
 
+// Initialize email templates on server start
+import { initializeDefaultTemplates } from './utils/emailTemplates';
+
 // Start server and keep the instance to prevent process exit
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📝 Environment: ${process.env.NODE_ENV}`);
+
+  // Initialize default email templates
+  try {
+    await initializeDefaultTemplates();
+    console.log('✉️  Email templates initialized');
+  } catch (error) {
+    console.error('Failed to initialize email templates:', error);
+  }
 });
 
 // Export app for testing (optional)

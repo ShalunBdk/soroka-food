@@ -304,16 +304,19 @@ export const searchRecipes = async (req: Request, res: Response): Promise<void> 
 
 // Get public site statistics
 export const getPublicStats = async (req: Request, res: Response): Promise<void> => {
-  const [totalRecipes, totalComments, totalUsers] = await Promise.all([
+  const [totalRecipes, totalComments, totalViews] = await Promise.all([
     prisma.recipe.count({ where: { status: 'PUBLISHED' } }),
     prisma.comment.count({ where: { status: 'APPROVED' } }),
-    prisma.user.count()
+    prisma.recipe.aggregate({
+      where: { status: 'PUBLISHED' },
+      _sum: { views: true }
+    }).then(result => result._sum.views || 0)
   ]);
 
   res.json({
     recipesCount: totalRecipes,
     commentsCount: totalComments,
-    usersCount: totalUsers
+    viewsCount: totalViews
   });
 };
 

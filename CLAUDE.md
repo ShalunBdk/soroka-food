@@ -25,8 +25,8 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## Architecture
 
-### Database Schema (10 tables)
-`users` (roles: SUPER_ADMIN/ADMIN/MODERATOR, active status), `categories`, `recipes` (with JSON: ingredients, instructions, nutrition, tips), `recipe_categories`, `comments` (moderation: APPROVED/PENDING/SPAM), `newsletter_subscribers`, `site_settings`, `static_pages`, `spam_filter_settings` (configurable anti-spam rules), `admin_logs` (audit trail for all admin/moderator actions)
+### Database Schema (14 tables)
+`users` (roles: SUPER_ADMIN/ADMIN/MODERATOR, active status), `categories`, `recipes` (with JSON: ingredients, instructions, nutrition, tips), `recipe_categories`, `comments` (moderation: APPROVED/PENDING/SPAM), `newsletter_subscribers` (verified, verificationToken, unsubscribeToken), `site_settings`, `static_pages`, `spam_filter_settings` (configurable anti-spam rules), `admin_logs` (audit trail for all admin/moderator actions), `smtp_settings` (encrypted email server config), `email_templates` (customizable templates with Handlebars), `email_logs` (send history with status tracking)
 
 ### Key Routes
 
@@ -41,11 +41,14 @@ This file provides guidance to Claude Code when working with this repository.
 
 ### API Endpoints
 
-**Public**: `/api/auth/login`, `/api/recipes` (supports ?sort=newest|popular|photo), `/api/recipes/:id`, `/api/recipes/:id/view`, `/api/recipes/search`, `/api/recipes/stats`, `/api/recipes/cuisines/:type`, `/api/categories`, `/api/categories/:slug/recipes`, `/api/settings`, `/api/static-pages/:slug`, `/api/comments`, `/api/newsletter/subscribe`
+**Public**: `/api/auth/login`, `/api/recipes` (supports ?sort=newest|popular|photo), `/api/recipes/:id`, `/api/recipes/:id/view`, `/api/recipes/search`, `/api/recipes/stats`, `/api/recipes/cuisines/:type`, `/api/categories`, `/api/categories/:slug/recipes`, `/api/settings`, `/api/static-pages/:slug`, `/api/comments`, `/api/newsletter/subscribe`, `/api/newsletter/verify/:token`, `/api/newsletter/unsubscribe/:token`
 
 **Protected** (requires `Authorization: Bearer <token>`):
-- `/api/admin/*` - stats (MOD+), recipes (MOD+), categories (MOD+), tags (MOD+), comments (MOD+ including bulk actions), newsletter (ADMIN+), users (ADMIN+), settings (ADMIN+), static-pages (ADMIN+), spam-filter (SUPER_ADMIN only), logs (SUPER_ADMIN only)
+- `/api/admin/*` - stats (MOD+), recipes (MOD+), categories (MOD+), tags (MOD+), comments (MOD+ including bulk actions), newsletter (ADMIN+), users (ADMIN+), settings (ADMIN+), static-pages (ADMIN+), email-logs (ADMIN+), smtp (SUPER_ADMIN only), email-templates (SUPER_ADMIN only), spam-filter (SUPER_ADMIN only), logs (SUPER_ADMIN only)
 - `/api/admin/logs` - GET / (list logs with filters), GET /stats (statistics)
+- `/api/admin/smtp` - GET /, PUT /, POST /test (SMTP configuration)
+- `/api/admin/email-templates` - Full CRUD + POST /:id/preview, GET /variables
+- `/api/admin/email-logs` - GET /, GET /stats (email send history)
 - `/api/upload/*` - recipe-image (MOD+), step-images (MOD+)
 
 ## Database & Types
@@ -295,6 +298,139 @@ Optimized indexes on `userId`, `action`, `resource`, `createdAt` for fast filter
 - Database: `prisma/schema.prisma` (AdminLog model)
 - Integration: All admin controllers (auth, admin, user, tag, staticPage, spamFilter)
 
+### Email/Newsletter System
+
+**Comprehensive Newsletter & Email Marketing Platform** with verification, automated newsletters, and full admin control.
+
+**System Overview**:
+Complete email system with SMTP configuration, customizable templates, verified subscriptions, automated newsletters on new recipe publication, and detailed send history tracking.
+
+**Core Features**:
+
+1. **Email Verification (Double Opt-In)**:
+   - Subscribers must verify email via link (protection from "email bombers")
+   - 24-hour verification window
+   - Auto-cleanup of unverified subscriptions after 7 days
+   - Prevents fake/malicious subscriptions
+   - Welcome email sent after verification
+
+2. **SMTP Configuration** (SUPER_ADMIN only, `/admin/smtp`):
+   - Database-stored settings (host, port, secure, user, password encrypted with AES-256)
+   - Test connection functionality
+   - Enable/disable toggle
+   - Support for Gmail (app passwords), Mailgun, SendGrid, custom SMTP
+   - Password encryption key in .env (`EMAIL_ENCRYPTION_KEY`)
+
+3. **Email Templates** (SUPER_ADMIN only, customizable with Handlebars):
+   - **VERIFICATION**: Sent when user subscribes (link to confirm)
+   - **WELCOME**: Sent after successful verification
+   - **NEW_RECIPE**: Automatic newsletter when recipe is published
+   - **UNSUBSCRIBE**: Confirmation when user unsubscribes
+   - Full CRUD via admin panel (create custom templates)
+   - Preview with test data
+   - Variable injection: `{{recipeName}}`, `{{recipeUrl}}`, `{{unsubscribeUrl}}`, etc.
+   - HTML + plain text versions
+
+4. **Automated Newsletter**:
+   - Triggers automatically when recipe status changes to PUBLISHED
+   - Async send (doesn't block API response)
+   - Batch processing (50 subscribers per batch, 2-second delay between batches)
+   - Only sent to verified subscribers
+   - Includes recipe details, image, nutrition, link to full recipe
+   - Every email includes unsubscribe link
+
+5. **Unsubscribe System**:
+   - Unique token per subscriber (generated on subscription)
+   - One-click unsubscribe via `/unsubscribe/:token`
+   - Confirmation email after unsubscribe
+   - Re-subscribe option available
+
+6. **Email Logs** (ADMIN+ only, `/admin/email-logs`):
+   - Complete history of all sent emails
+   - Status tracking: SENT, FAILED, PENDING
+   - Error messages for failed sends
+   - Filter by status, template type, date range
+   - Statistics: total sent, failed, pending, recent activity (24h)
+   - Pagination (10/25/50/100 per page)
+
+**API Endpoints**:
+
+**Public**:
+- `POST /api/newsletter/subscribe` - Create subscription (sends verification email)
+- `GET /api/newsletter/verify/:token` - Verify email address
+- `GET /api/newsletter/unsubscribe/:token` - Unsubscribe by token
+
+**Admin (SUPER_ADMIN only)**:
+- `GET /api/admin/smtp` - Get SMTP settings (password hidden)
+- `PUT /api/admin/smtp` - Update SMTP settings
+- `POST /api/admin/smtp/test` - Test SMTP connection (sends test email)
+- `GET /api/admin/email-templates` - List all templates
+- `GET /api/admin/email-templates/:id` - Get template by ID
+- `POST /api/admin/email-templates` - Create template
+- `PUT /api/admin/email-templates/:id` - Update template
+- `DELETE /api/admin/email-templates/:id` - Delete template (protects built-in defaults)
+- `POST /api/admin/email-templates/:id/preview` - Preview template with test data
+- `GET /api/admin/email-templates/variables` - Get available variables
+
+**Admin (ADMIN+ only)**:
+- `GET /api/admin/email-logs` - Get email send history (filterable, paginated)
+- `GET /api/admin/email-logs/stats` - Get email statistics
+
+**Database Models**:
+- `SmtpSettings` (single-row, id=1): host, port, secure, user, password (encrypted), fromEmail, fromName, enabled
+- `EmailTemplate`: name, subject, bodyHtml, bodyText, variables[], isDefault, type (enum)
+- `NewsletterSubscriber`: email, status, verified, verificationToken, verifiedAt, unsubscribeToken
+- `EmailLog`: subscriberId, templateId, subject, recipient, status, error, sentAt
+
+**Frontend Pages**:
+- `/admin/smtp` - SMTP settings form (SUPER_ADMIN only)
+- `/admin/email-logs` - Email send history with stats (ADMIN+)
+- `/verify-email/:token` - Public verification success page
+- `/unsubscribe/:token` - Public unsubscribe confirmation page
+
+**Implementation Files**:
+- Backend Core: `utils/emailService.ts`, `utils/emailTemplates.ts`, `utils/newsletterQueue.ts`
+- Backend Controllers: `controllers/smtpController.ts`, `controllers/emailTemplateController.ts`, `controllers/emailLogController.ts`, `controllers/newsletterController.ts`
+- Backend Routes: `routes/smtpRoutes.ts`, `routes/emailTemplateRoutes.ts`, `routes/emailLogRoutes.ts`, `routes/newsletterRoutes.ts`
+- Frontend: `pages/admin/AdminSmtpSettings.tsx`, `pages/admin/AdminEmailLogs.tsx`, `pages/VerifyEmail.tsx`, `pages/Unsubscribe.tsx`
+- Database: `prisma/schema.prisma` (4 new models)
+- Integration: `controllers/adminController.ts` (createRecipe, updateRecipe)
+
+**Environment Variables** (`.env`):
+```
+EMAIL_ENCRYPTION_KEY=<32-character-random-string>
+FRONTEND_URL=http://localhost:5173
+BACKEND_URL=http://localhost:3000
+```
+
+**Setup Workflow**:
+1. Run database migration: `npm run prisma:migrate && npm run prisma:seed`
+2. Server auto-creates default email templates on start
+3. SUPER_ADMIN configures SMTP in `/admin/smtp` (currently disabled)
+4. SUPER_ADMIN tests connection
+5. Enable email sending
+6. System is ready - subscribers get verification emails, new recipes trigger newsletters
+
+**Security Features**:
+- AES-256 password encryption for SMTP credentials
+- Verification tokens (32-byte random)
+- Unsubscribe tokens (UUID)
+- Rate limiting on subscribe (3 attempts/hour per IP)
+- Email validation
+- SUPER_ADMIN-only SMTP/template access
+- Logs all email activity
+
+**Key Features**:
+- Zero-config defaults (works out of box, configure later)
+- Protection from email bombing (double opt-in)
+- Automatic newsletter on recipe publish
+- Batch sending with rate limiting
+- Retry logic (3 attempts with exponential backoff)
+- Complete audit trail
+- Responsive admin UI
+- Template preview before send
+- One-click unsubscribe
+
 ### Error Handling
 - Backend: `AppError` class, global `errorHandler` middleware, `asyncHandler` wrapper
 - Frontend: `ApiError` class in api.ts, auto-logout on 401
@@ -397,3 +533,4 @@ MAX_FILE_SIZE=5242880  # 5MB
 - **2025-01-03**: User Management & Role-Based Access Control - Three-tier role hierarchy (SUPER_ADMIN/ADMIN/MODERATOR), granular permission system, user CRUD API, AdminUsers page, UserForm with password management, role-based route protection, privilege escalation prevention
 - **2025-01-03**: Anti-Spam System - 6-layer protection (honeypot, auto-detection with 5 filters, bulk moderation, configurable spam filter for SUPER_ADMIN), database-driven settings, custom keyword management, smart UI with optimized slider behavior, handles mass spam attacks efficiently
 - **2025-01-03**: Admin Action Logging - Comprehensive audit trail system (SUPER_ADMIN only), tracks all admin/moderator actions with IP/user agent, filtering by user/action/resource/date, expandable JSON details, append-only logs with database indexing, integrated across all admin controllers
+- **2025-01-03**: Email/Newsletter System - Complete newsletter platform with double opt-in verification (anti-bombing), SMTP configuration (SUPER_ADMIN), customizable Handlebars email templates, automated newsletters on recipe publish (batch sending 50/batch with retry logic), unsubscribe system, email send history (ADMIN+), AES-256 password encryption, supports Gmail/Mailgun/SendGrid, zero-config defaults with full admin customization

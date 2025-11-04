@@ -11,6 +11,8 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Rules from './pages/Rules';
 import Advertising from './pages/Advertising';
+import VerifyEmail from './pages/VerifyEmail';
+import Unsubscribe from './pages/Unsubscribe';
 
 // Admin imports
 import AdminLayout from './components/AdminLayout/AdminLayout';
@@ -28,6 +30,8 @@ import AdminUsers from './pages/admin/AdminUsers';
 import UserForm from './pages/admin/UserForm';
 import AdminSpamFilter from './pages/admin/AdminSpamFilter';
 import AdminLogs from './pages/admin/AdminLogs';
+import AdminSmtpSettings from './pages/admin/AdminSmtpSettings';
+import AdminEmailLogs from './pages/admin/AdminEmailLogs';
 
 import { tokenManager } from './services/api';
 import { SettingsProvider } from './contexts/SettingsContext';
@@ -122,6 +126,20 @@ function App() {
             <>
               <Header />
               <Advertising />
+              <Footer />
+            </>
+          } />
+          <Route path="/verify-email/:token" element={
+            <>
+              <Header />
+              <VerifyEmail />
+              <Footer />
+            </>
+          } />
+          <Route path="/unsubscribe/:token" element={
+            <>
+              <Header />
+              <Unsubscribe />
               <Footer />
             </>
           } />
@@ -232,6 +250,20 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <AdminLogs />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/smtp" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminSmtpSettings />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/email-logs" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminEmailLogs />
               </AdminLayout>
             </ProtectedRoute>
           } />

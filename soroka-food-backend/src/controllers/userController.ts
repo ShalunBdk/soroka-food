@@ -253,7 +253,7 @@ export const updateUser = async (
     action: AdminAction.UPDATE_USER,
     resource: ResourceType.USERS,
     resourceId: userId,
-    details: createUpdateDetails(existingUser, updatedUser),
+    details: createUpdateDetails(targetUser, updatedUser),
     req
   });
 

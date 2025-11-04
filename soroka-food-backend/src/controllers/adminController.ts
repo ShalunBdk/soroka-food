@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { logAdminAction, AdminAction, ResourceType, createUpdateDetails, createDeleteDetails, createBulkDetails } from '../utils/adminLogger';
 import { AuthRequest } from '../middleware/auth';
+import { sendNewRecipeNewsletter } from '../utils/newsletterQueue';
 
 // Get dashboard statistics
 export const getDashboardStats = async (req: Request, res: Response): Promise<void> => {
@@ -221,6 +222,22 @@ export const createRecipe = async (req: AuthRequest, res: Response): Promise<voi
     req
   });
 
+  // Send newsletter if recipe is published
+  if (status === 'PUBLISHED') {
+    // Send newsletter asynchronously (don't wait for it to complete)
+    sendNewRecipeNewsletter({
+      id: recipe.id,
+      title: recipe.title,
+      description: recipe.description,
+      image: recipe.image,
+      cookingTime: recipe.cookingTime,
+      servings: recipe.servings,
+      calories: recipe.calories
+    }).catch(error => {
+      console.error('Failed to send newsletter for new recipe:', error);
+    });
+  }
+
   res.status(201).json({ message: 'Recipe created successfully', recipe });
 };
 
@@ -295,6 +312,22 @@ export const updateRecipe = async (req: AuthRequest, res: Response): Promise<voi
     ),
     req
   });
+
+  // Send newsletter if recipe status changed from DRAFT to PUBLISHED
+  if (oldRecipe.status === 'DRAFT' && status === 'PUBLISHED') {
+    // Send newsletter asynchronously (don't wait for it to complete)
+    sendNewRecipeNewsletter({
+      id: updated.id,
+      title: updated.title,
+      description: updated.description,
+      image: updated.image,
+      cookingTime: updated.cookingTime,
+      servings: updated.servings,
+      calories: updated.calories
+    }).catch(error => {
+      console.error('Failed to send newsletter for published recipe:', error);
+    });
+  }
 
   res.json({ message: 'Recipe updated successfully', recipe: updated });
 };
@@ -557,6 +590,9 @@ export const getAllSubscribers = async (req: Request, res: Response): Promise<vo
     id: s.id,
     email: s.email,
     status: s.status,
+    verified: s.verified,
+    verifiedAt: s.verifiedAt,
+    subscribedDate: s.subscribedDate,
     createdAt: s.subscribedDate
   }));
 

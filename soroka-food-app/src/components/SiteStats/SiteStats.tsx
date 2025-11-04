@@ -6,11 +6,11 @@ const SiteStats: React.FC = () => {
   const [stats, setStats] = useState<{
     recipesCount: number;
     commentsCount: number;
-    usersCount: number;
+    viewsCount: number;
   }>({
     recipesCount: 0,
     commentsCount: 0,
-    usersCount: 0
+    viewsCount: 0
   });
 
   useEffect(() => {
@@ -33,8 +33,8 @@ const SiteStats: React.FC = () => {
         <span className="stats-label">рецептов</span>
       </div>
       <div className="stats-item">
-        <span className="stats-number">{stats.usersCount.toLocaleString()}</span>
-        <span className="stats-label">пользователей</span>
+        <span className="stats-number">{stats.viewsCount.toLocaleString()}</span>
+        <span className="stats-label">просмотров</span>
       </div>
       <div className="stats-item">
         <span className="stats-number">{stats.commentsCount.toLocaleString()}</span>

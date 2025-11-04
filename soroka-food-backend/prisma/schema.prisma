@@ -140,11 +140,11 @@ enum CommentStatus {
 model NewsletterSubscriber {
   id                 Int                @id @default(autoincrement())
   email              String             @unique
-  status             SubscriptionStatus @default(ACTIVE)
+  status             SubscriptionStatus @default(PENDING)
   verified           Boolean            @default(false)
   verificationToken  String?            @unique
   verifiedAt         DateTime?
-  unsubscribeToken   String             @unique @default(uuid())
+  unsubscribeToken   String?            @unique
   subscribedDate     DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
@@ -156,6 +156,7 @@ model NewsletterSubscriber {
 }
 
 enum SubscriptionStatus {
+  PENDING
   ACTIVE
   UNSUBSCRIBED
 }
@@ -217,4 +218,72 @@ model SpamFilterSettings {
   updatedAt DateTime @updatedAt
 
   @@map("spam_filter_settings")
+}
+
+// SMTP settings for email sending (single row, SUPER_ADMIN only)
+model SmtpSettings {
+  id                Int      @id @default(1)
+  host              String   @default("smtp.gmail.com")
+  port              Int      @default(587)
+  secure            Boolean  @default(false) // true for 465, false for other ports
+  user              String   @default("")
+  password          String   @default("") // Encrypted password
+  fromEmail         String   @default("noreply@sorokafood.com")
+  fromName          String   @default("Soroka Food")
+  enabled           Boolean  @default(false)
+  updatedAt         DateTime @updatedAt
+
+  @@map("smtp_settings")
+}
+
+// Email templates
+model EmailTemplate {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // verification, welcome, new-recipe, unsubscribe
+  subject     String
+  bodyHtml    String   @db.Text // HTML version
+  bodyText    String   @db.Text // Plain text fallback
+  variables   String[] @default([]) // Available variables: recipeName, recipeUrl, etc.
+  isDefault   Boolean  @default(false)
+  type        EmailTemplateType
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  emailLogs   EmailLog[]
+
+  @@map("email_templates")
+}
+
+enum EmailTemplateType {
+  VERIFICATION
+  WELCOME
+  NEW_RECIPE
+  UNSUBSCRIBE
+}
+
+// Email sending logs
+model EmailLog {
+  id                     Int                   @id @default(autoincrement())
+  subscriberId           Int
+  templateId             Int?
+  subject                String
+  recipient              String
+  status                 EmailStatus           @default(PENDING)
+  error                  String?               @db.Text
+  sentAt                 DateTime?
+  createdAt              DateTime              @default(now())
+
+  subscriber             NewsletterSubscriber  @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  template               EmailTemplate?        @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  @@index([subscriberId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("email_logs")
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
 }

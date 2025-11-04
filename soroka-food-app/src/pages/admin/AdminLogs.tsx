@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import api, { tokenManager } from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
 import { type AdminLog, type AdminLogsResponse, type User } from '../../types';
 import './AdminLogs.css';
 
@@ -24,7 +23,6 @@ function AdminLogs() {
   // Users list for filter dropdown
   const [users, setUsers] = useState<User[]>([]);
 
-  const toast = useToast();
   const currentUser = tokenManager.getCurrentUser();
 
   useEffect(() => {

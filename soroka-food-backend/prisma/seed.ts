@@ -443,7 +443,50 @@ Telegram: @sorokafood_ads</p>
   ]);
   console.log('✅ Static pages created:', staticPages.length);
 
+  // Create SMTP settings
+  await prisma.smtpSettings.upsert({
+    where: { id: 1 },
+    update: {
+      // Reset password to empty on seed to avoid decryption errors
+      password: ''
+    },
+    create: {
+      id: 1,
+      host: 'smtp.yandex.ru',
+      port: 587,
+      secure: false,
+      user: '',
+      password: '',
+      fromEmail: 'noreply@sorokafood.com',
+      fromName: 'Soroka Food',
+      enabled: false
+    }
+  });
+  console.log('✅ SMTP settings created (disabled by default - configure in admin panel)');
+
+  // Create spam filter settings (if not exists)
+  await prisma.spamFilterSettings.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      id: 1,
+      customKeywords: [],
+      enableKeywordFilter: true,
+      enableUrlFilter: true,
+      enableCapsFilter: true,
+      enableRepetitiveFilter: true,
+      enableDuplicateFilter: true,
+      maxUrls: 2,
+      capsPercentage: 80
+    }
+  });
+  console.log('✅ Spam filter settings created');
+
   console.log('\n🎉 Seed completed successfully!');
+  console.log('\n📧 Email system is ready!');
+  console.log('   - SMTP settings: Disabled (configure in /admin/smtp)');
+  console.log('   - Email templates: Will be auto-created on server start');
+  console.log('   - Newsletter: Ready to collect subscribers (verification required)');
 }
 
 main()

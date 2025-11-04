@@ -18,12 +18,14 @@ const Newsletter: React.FC = () => {
 
     setLoading(true);
     try {
-      await api.newsletter.subscribe(email);
-      toast.success(`Спасибо за подписку!\nВаш email: ${email}`);
+      const response = await api.newsletter.subscribe(email);
+      // Show server message (e.g., "Подписка создана. Проверьте вашу почту для подтверждения подписки.")
+      toast.success(response.message || 'Проверьте вашу почту для подтверждения подписки');
       setEmail('');
       setAgreed(false);
-    } catch (err) {
-      toast.error('Не удалось подписаться. Возможно, этот email уже зарегистрирован.');
+    } catch (err: any) {
+      const errorMessage = err.message || 'Не удалось подписаться. Возможно, этот email уже зарегистрирован.';
+      toast.error(errorMessage);
       console.error('Newsletter subscription error:', err);
     } finally {
       setLoading(false);
