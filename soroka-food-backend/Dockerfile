@@ -30,13 +30,16 @@ COPY prisma ./prisma/
 # Install only production dependencies
 RUN npm ci --only=production
 
+# Generate Prisma Client in production stage
+RUN npx prisma generate
+
 # Copy built application
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Create directory for uploads
 RUN mkdir -p public/uploads
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+# Run migrations and start the app
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]

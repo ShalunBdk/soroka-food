@@ -315,6 +315,7 @@ MAX_FILE_SIZE=5242880  # 5MB
 # Применить миграции и загрузить начальные данные
 npm run prisma:migrate
 npm run prisma:seed
+docker-compose exec backend node dist/prisma/seed.js
 ```
 
 #### 3️⃣ Запуск
