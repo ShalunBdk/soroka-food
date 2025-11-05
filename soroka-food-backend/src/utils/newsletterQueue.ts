@@ -1,6 +1,7 @@
 import prisma from '../config/database';
 import { sendEmail } from './emailService';
 import { getTemplateByType } from './emailTemplates';
+import { logger } from '../config/logger';
 
 interface Recipe {
   id: number;
@@ -24,14 +25,14 @@ export async function sendNewRecipeNewsletter(recipe: Recipe): Promise<void> {
     });
 
     if (subscribers.length === 0) {
-      console.log('No verified subscribers to send newsletter to');
+      logger.info('No verified subscribers to send newsletter to');
       return;
     }
 
     // Get the new-recipe email template
     const template = await getTemplateByType('NEW_RECIPE');
     if (!template) {
-      console.error('New recipe email template not found');
+      logger.error('New recipe email template not found');
       return;
     }
 
@@ -41,11 +42,11 @@ export async function sendNewRecipeNewsletter(recipe: Recipe): Promise<void> {
     });
 
     if (!smtpSettings || !smtpSettings.enabled) {
-      console.log('SMTP is not enabled, skipping newsletter');
+      logger.info('SMTP is not enabled, skipping newsletter');
       return;
     }
 
-    console.log(`Starting newsletter send to ${subscribers.length} subscribers for recipe: ${recipe.title}`);
+    logger.info(`Starting newsletter send to ${subscribers.length} subscribers for recipe: ${recipe.title}`);
 
     // Send emails in batches to avoid overwhelming the SMTP server
     const batchSize = 50;
@@ -58,7 +59,7 @@ export async function sendNewRecipeNewsletter(recipe: Recipe): Promise<void> {
       const batch = subscribers.slice(i, i + batchSize);
 
       // Process batch in parallel
-      const promises = batch.map(async (subscriber) => {
+      const promises = batch.map(async (subscriber: any) => {
         try {
           const siteUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
           const recipeUrl = `${siteUrl}/recipe/${recipe.id}`;
@@ -90,7 +91,7 @@ export async function sendNewRecipeNewsletter(recipe: Recipe): Promise<void> {
             failureCount++;
           }
         } catch (error) {
-          console.error(`Failed to send email to ${subscriber.email}:`, error);
+          logger.error(`Failed to send email to ${subscriber.email}:`, error);
           failureCount++;
         }
       });
@@ -103,9 +104,9 @@ export async function sendNewRecipeNewsletter(recipe: Recipe): Promise<void> {
       }
     }
 
-    console.log(`Newsletter send complete. Success: ${successCount}, Failures: ${failureCount}`);
+    logger.info(`Newsletter send complete. Success: ${successCount}, Failures: ${failureCount}`);
   } catch (error) {
-    console.error('Error in sendNewRecipeNewsletter:', error);
+    logger.error('Error in sendNewRecipeNewsletter:', error);
     throw error;
   }
 }
@@ -148,9 +149,9 @@ export async function sendTestNewsletter(recipe: Recipe, email: string): Promise
       }
     }, subscriber?.id);
 
-    console.log(`Test newsletter sent to ${email}`);
+    logger.info(`Test newsletter sent to ${email}`);
   } catch (error) {
-    console.error('Error in sendTestNewsletter:', error);
+    logger.error('Error in sendTestNewsletter:', error);
     throw error;
   }
 }

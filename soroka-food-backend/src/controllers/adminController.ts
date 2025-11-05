@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { logAdminAction, AdminAction, ResourceType, createUpdateDetails, createDeleteDetails, createBulkDetails } from '../utils/adminLogger';
 import { AuthRequest } from '../middleware/auth';
+import { logger } from '../config/logger';
 import { sendNewRecipeNewsletter } from '../utils/newsletterQueue';
 import { invalidateRecipeCache, invalidateCategoryCache, invalidateCommentCache } from '../utils/cacheInvalidation';
 
@@ -238,7 +239,7 @@ export const createRecipe = async (req: AuthRequest, res: Response): Promise<voi
       servings: recipe.servings,
       calories: recipe.calories
     }).catch(error => {
-      console.error('Failed to send newsletter for new recipe:', error);
+      logger.error('Failed to send newsletter for new recipe:', error);
     });
   }
 
@@ -332,7 +333,7 @@ export const updateRecipe = async (req: AuthRequest, res: Response): Promise<voi
       servings: updated.servings,
       calories: updated.calories
     }).catch(error => {
-      console.error('Failed to send newsletter for published recipe:', error);
+      logger.error('Failed to send newsletter for published recipe:', error);
     });
   }
 
