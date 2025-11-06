@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { sendEmail, generateVerificationToken, generateUnsubscribeToken } from '../utils/emailService';
-import { getTemplateByType } from '../utils/emailTemplates';
+import { getTemplateByType, EmailTemplateType } from '../utils/emailTemplates';
 
 // Subscribe to newsletter with email verification (public endpoint)
 export const subscribe = async (req: Request, res: Response): Promise<void> => {
@@ -53,7 +53,7 @@ export const subscribe = async (req: Request, res: Response): Promise<void> => {
       });
 
       // Send verification email
-      const template = await getTemplateByType('VERIFICATION');
+      const template = await getTemplateByType(EmailTemplateType.VERIFICATION);
       if (template) {
         const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email/${verificationToken}`;
         console.log('Resending verification email. URL:', verificationUrl);
@@ -88,7 +88,7 @@ export const subscribe = async (req: Request, res: Response): Promise<void> => {
       });
 
       // Send verification email
-      const template = await getTemplateByType('VERIFICATION');
+      const template = await getTemplateByType(EmailTemplateType.VERIFICATION);
       if (template) {
         const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email/${verificationToken}`;
         console.log('Reactivating subscription. Verification URL:', verificationUrl);
@@ -131,7 +131,7 @@ export const subscribe = async (req: Request, res: Response): Promise<void> => {
 
   // Send verification email
   try {
-    const template = await getTemplateByType('VERIFICATION');
+    const template = await getTemplateByType(EmailTemplateType.VERIFICATION);
     if (template) {
       const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email/${verificationToken}`;
       console.log('Verification URL:', verificationUrl);
@@ -222,7 +222,7 @@ export const verify = async (req: Request, res: Response): Promise<void> => {
 
   // Send welcome email
   try {
-    const template = await getTemplateByType('WELCOME');
+    const template = await getTemplateByType(EmailTemplateType.WELCOME);
     if (template) {
       const siteUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
       const unsubscribeUrl = `${siteUrl}/unsubscribe/${subscriber.unsubscribeToken}`;
@@ -269,7 +269,7 @@ export const unsubscribeByToken = async (req: Request, res: Response): Promise<v
 
   // Send unsubscribe confirmation email
   try {
-    const template = await getTemplateByType('UNSUBSCRIBE');
+    const template = await getTemplateByType(EmailTemplateType.UNSUBSCRIBE);
     if (template) {
       await sendEmail({
         to: subscriber.email,
