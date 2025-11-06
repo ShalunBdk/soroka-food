@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import crypto from 'crypto';
 import Handlebars from 'handlebars';
 import net from 'net';
+import { logger } from '../config/logger';
 
 interface EmailOptions {
   to: string;
@@ -27,7 +28,7 @@ export function encryptPassword(password: string): string {
 
   // Check if encryption key is set
   if (!process.env.EMAIL_ENCRYPTION_KEY) {
-    console.error('EMAIL_ENCRYPTION_KEY is not set in .env file. Password encryption will fail.');
+    logger.error('EMAIL_ENCRYPTION_KEY is not set in .env file. Password encryption will fail.');
     throw new Error('EMAIL_ENCRYPTION_KEY not configured. Please set it in your .env file.');
   }
 
@@ -51,7 +52,7 @@ export function decryptPassword(encryptedPassword: string): string {
 
   // Check if encryption key is set
   if (!process.env.EMAIL_ENCRYPTION_KEY) {
-    console.error('EMAIL_ENCRYPTION_KEY is not set in .env file. Password decryption will fail.');
+    logger.error('EMAIL_ENCRYPTION_KEY is not set in .env file. Password decryption will fail.');
     throw new Error('EMAIL_ENCRYPTION_KEY not configured. Please set it in your .env file.');
   }
 
@@ -79,7 +80,7 @@ export function decryptPassword(encryptedPassword: string): string {
 
     return decrypted;
   } catch (error: any) {
-    console.error('Password decryption failed:', error.message);
+    logger.error('Password decryption failed:', error.message);
     throw new Error(`Failed to decrypt password: ${error.message}. This usually means the EMAIL_ENCRYPTION_KEY has changed or the password was encrypted with a different key.`);
   }
 }
@@ -92,22 +93,22 @@ async function createTransporter(): Promise<Transporter | null> {
     });
 
     if (!settings) {
-      console.warn('SMTP settings not found in database');
+      logger.warn('SMTP settings not found in database');
       return null;
     }
 
     if (!settings.enabled) {
-      console.warn('SMTP settings disabled');
+      logger.warn('SMTP settings disabled');
       return null;
     }
 
     if (!settings.host || !settings.user) {
-      console.warn('SMTP settings incomplete (missing host or user)');
+      logger.warn('SMTP settings incomplete (missing host or user)');
       return null;
     }
 
     if (!settings.password || settings.password === '') {
-      console.warn('SMTP password not set');
+      logger.warn('SMTP password not set');
       return null;
     }
 
@@ -121,7 +122,7 @@ async function createTransporter(): Promise<Transporter | null> {
 
     process.stdout.write('\n>>> Creating SMTP transporter with settings:\n');
     process.stdout.write(JSON.stringify(transporterSettings, null, 2) + '\n');
-    console.log('Creating SMTP transporter with settings:', transporterSettings);
+    logger.info('Creating SMTP transporter with settings:', transporterSettings);
 
     const decryptedPassword = decryptPassword(settings.password);
     process.stdout.write('>>> Password decrypted successfully\n');
@@ -161,8 +162,8 @@ async function createTransporter(): Promise<Transporter | null> {
 
     return transporter;
   } catch (error: any) {
-    console.error('Failed to create email transporter:', error.message);
-    console.error('Error details:', error);
+    logger.error('Failed to create email transporter:', error.message);
+    logger.error('Error details:', error);
     return null;
   }
 }
@@ -250,11 +251,11 @@ export async function sendEmail(
     };
 
   } catch (error: any) {
-    console.error('Email send error:', error);
+    logger.error('Email send error:', error);
 
     // Retry logic
     if (retryCount < MAX_RETRIES) {
-      console.log(`Retrying email send (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+      logger.info(`Retrying email send (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
       await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1))); // Exponential backoff
       return sendEmail(options, subscriberId, retryCount + 1);
     }
@@ -315,7 +316,7 @@ async function testTcpConnection(host: string, port: number): Promise<{ success:
 export async function testSmtpConnection(): Promise<{ success: boolean; error?: string }> {
   try {
     process.stdout.write('\n>>> Starting SMTP connection test...\n');
-    console.log('>>> Starting SMTP connection test...');
+    logger.info('>>> Starting SMTP connection test...');
 
     // Get settings for TCP test
     const settings = await prisma.smtpSettings.findUnique({ where: { id: 1 } });
@@ -342,11 +343,11 @@ export async function testSmtpConnection(): Promise<{ success: boolean; error?: 
     await transporter.verify();
 
     process.stdout.write('>>> SMTP connection successful!\n');
-    console.log('>>> SMTP connection successful!');
+    logger.info('>>> SMTP connection successful!');
     return { success: true };
   } catch (error: any) {
     process.stdout.write(`>>> SMTP connection test failed: ${error.message}\n`);
-    console.error('SMTP connection test failed:', error);
+    logger.error('SMTP connection test failed:', error);
 
     // Provide detailed error messages
     let errorMessage = error.message || 'Connection failed';

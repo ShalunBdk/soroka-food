@@ -165,7 +165,7 @@ export const removeSpamKeyword = async (req: AuthRequest, res: Response): Promis
   }
 
   const currentKeywords = settings.customKeywords;
-  const filteredKeywords = currentKeywords.filter(k => k.toLowerCase() !== decodedKeyword);
+  const filteredKeywords = currentKeywords.filter((k: string) => k.toLowerCase() !== decodedKeyword);
 
   if (currentKeywords.length === filteredKeywords.length) {
     throw new AppError('Keyword not found', 404);

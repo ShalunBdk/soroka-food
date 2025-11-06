@@ -116,7 +116,7 @@ export const getRecipeById = async (req: Request, res: Response): Promise<void> 
     instructions: recipe.instructions,
     nutrition: recipe.nutrition,
     tips: recipe.tips,
-    comments: recipe.comments.map(comment => ({
+    comments: recipe.comments.map((comment: any) => ({
       id: comment.id,
       author: comment.author,
       date: formatDate(comment.createdAt),
@@ -176,7 +176,7 @@ export const getRecipesByCuisine = async (req: Request, res: Response): Promise<
     prisma.recipe.count({ where })
   ]);
 
-  const recipesWithCategories = recipes.map(recipe => ({
+  const recipesWithCategories = recipes.map((recipe: any) => ({
     id: recipe.id,
     title: recipe.title,
     description: recipe.description,
@@ -188,7 +188,7 @@ export const getRecipesByCuisine = async (req: Request, res: Response): Promise<
     date: recipe.date.toISOString().split('T')[0],
     views: recipe.views,
     rating: recipe.rating,
-    category: recipe.categories.map(c => c.category.name),
+    category: recipe.categories.map((c: any) => c.category.name),
     tags: recipe.tags,
     commentsCount: recipe._count.comments
   }));
@@ -273,7 +273,7 @@ export const searchRecipes = async (req: Request, res: Response): Promise<void> 
     prisma.recipe.count({ where })
   ]);
 
-  const recipesWithCategories = recipes.map(recipe => ({
+  const recipesWithCategories = recipes.map((recipe: any) => ({
     id: recipe.id,
     title: recipe.title,
     description: recipe.description,
@@ -285,7 +285,7 @@ export const searchRecipes = async (req: Request, res: Response): Promise<void> 
     date: recipe.date.toISOString().split('T')[0],
     views: recipe.views,
     rating: recipe.rating,
-    category: recipe.categories.map(c => c.category.name),
+    category: recipe.categories.map((c: any) => c.category.name),
     tags: recipe.tags,
     commentsCount: recipe._count.comments
   }));
@@ -310,7 +310,7 @@ export const getPublicStats = async (req: Request, res: Response): Promise<void>
     prisma.recipe.aggregate({
       where: { status: 'PUBLISHED' },
       _sum: { views: true }
-    }).then(result => result._sum.views || 0)
+    }).then((result: any) => result._sum.views || 0)
   ]);
 
   res.json({

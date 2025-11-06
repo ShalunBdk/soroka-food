@@ -13,8 +13,8 @@ export const getAllTags = async (req: Request, res: Response): Promise<void> => 
 
   // Count tag occurrences
   const tagMap = new Map<string, number>();
-  recipes.forEach(recipe => {
-    recipe.tags.forEach(tag => {
+  recipes.forEach((recipe: any) => {
+    recipe.tags.forEach((tag: string) => {
       tagMap.set(tag, (tagMap.get(tag) || 0) + 1);
     });
   });
@@ -60,8 +60,8 @@ export const renameTag = async (req: AuthRequest, res: Response): Promise<void> 
 
   // Update each recipe
   await Promise.all(
-    recipesWithTag.map(recipe => {
-      const updatedTags = recipe.tags.map(tag =>
+    recipesWithTag.map((recipe: any) => {
+      const updatedTags = recipe.tags.map((tag: string) =>
         tag === oldName ? newName : tag
       );
       return prisma.recipe.update({
@@ -114,8 +114,8 @@ export const deleteTag = async (req: AuthRequest, res: Response): Promise<void> 
 
   // Remove tag from each recipe
   await Promise.all(
-    recipesWithTag.map(recipe => {
-      const updatedTags = recipe.tags.filter(tag => tag !== name);
+    recipesWithTag.map((recipe: any) => {
+      const updatedTags = recipe.tags.filter((tag: string) => tag !== name);
       return prisma.recipe.update({
         where: { id: recipe.id },
         data: { tags: updatedTags }

@@ -1,5 +1,12 @@
 import prisma from '../config/database';
-import { EmailTemplateType } from '@prisma/client';
+
+// EmailTemplateType enum (matches Prisma schema)
+export enum EmailTemplateType {
+  VERIFICATION = 'VERIFICATION',
+  WELCOME = 'WELCOME',
+  NEW_RECIPE = 'NEW_RECIPE',
+  UNSUBSCRIBE = 'UNSUBSCRIBE'
+}
 
 interface BuiltInTemplate {
   name: string;
