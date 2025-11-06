@@ -2,7 +2,6 @@ import { Router } from 'express';
 import {
   getRecipes,
   getRecipeById,
-  getRecipesByCuisine,
   searchRecipes,
   getPublicStats,
   incrementRecipeView
@@ -18,8 +17,6 @@ router.get('/', cacheMiddleware(300), asyncHandler(getRecipes));
 router.get('/search', cacheMiddleware(300), asyncHandler(searchRecipes));
 // Cache stats for 10 minutes
 router.get('/stats', cacheMiddleware(600), asyncHandler(getPublicStats));
-// Cache cuisine pages for 5 minutes
-router.get('/cuisines/:type', cacheMiddleware(300), asyncHandler(getRecipesByCuisine));
 // Don't cache view increment (POST request)
 router.post('/:id/view', asyncHandler(incrementRecipeView));
 // Cache recipe details for 10 minutes
