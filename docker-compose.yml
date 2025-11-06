@@ -28,7 +28,9 @@ services:
       retries: 5
 
   backend:
-    build: ./soroka-food-backend
+    build:
+      context: ./soroka-food-backend
+      dockerfile: Dockerfile
     container_name: soroka-food-api
     ports:
       - "3000:3000"
@@ -50,7 +52,9 @@ services:
       - logs:/app/logs
 
   frontend:
-    build: ./soroka-food-app
+    build:
+      context: ./soroka-food-app
+      dockerfile: Dockerfile
     container_name: soroka-food-web
     ports:
       - "80:80"

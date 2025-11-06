@@ -2,8 +2,15 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Configure npm for better reliability
+ENV npm_config_fetch_retries=5
+ENV npm_config_fetch_retry_mintimeout=20000
+ENV npm_config_fetch_retry_maxtimeout=120000
+
 COPY package*.json ./
-RUN npm ci
+
+# Install dependencies with retry logic
+RUN npm ci || npm ci || npm ci
 
 COPY . .
 RUN npm run build
