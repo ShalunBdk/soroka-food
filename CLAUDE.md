@@ -539,6 +539,7 @@ await invalidateRecipeCache(recipeId);
 ### Security Features
 **Helmet**: Security HTTP headers, CSP for Google Fonts/external images
 **CORS**: Environment-based origins (`ALLOWED_ORIGINS` in .env, comma-separated)
+**Trust Proxy**: Enabled for nginx/reverse proxy support (`app.set('trust proxy', 1)`) - allows Express to correctly read client IP from X-Forwarded-For header, required for rate limiting and logging behind proxy
 **Rate Limiting** (IP-based):
 - General API: 1000 req/15min
 - Login: 5 attempts/15min (brute-force protection)
@@ -594,6 +595,7 @@ PRISMA_BINARIES_MIRROR=https://npmmirror.com/mirrors/prisma  # Alternative mirro
 - **CORS issues**: Update CORS config if frontend port changes
 - **Images not displaying**: Use `getImageUrl()` helper, not hardcoded URLs
 - **404 on draft recipes**: Use admin endpoint for editing, not public endpoint
+- **Nginx proxy error (ERR_ERL_UNEXPECTED_X_FORWARDED_FOR)**: When using nginx or other reverse proxy, Express must trust proxy headers. Solution: `app.set('trust proxy', 1)` is already configured in index.ts. Ensure nginx passes X-Forwarded-For header (`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`)
 - **Prisma ECONNRESET during Docker build**: This occurs when Prisma engines fail to download during `npm install`. Solution: Dockerfile includes `PRISMA_ENGINES_MIRROR` and `PRISMA_BINARIES_MIRROR` environment variables pointing to alternative mirrors (GitHub releases and npmmirror.com). These are already configured in Dockerfile and docker-compose.yml. If issues persist, ensure your server has stable internet connection or try building during off-peak hours.
 
 ## Recent Updates & Features

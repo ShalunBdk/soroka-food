@@ -13,6 +13,10 @@ dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy - необходимо при использовании nginx или других reverse proxy
+// Позволяет Express правильно обрабатывать X-Forwarded-* заголовки
+app.set('trust proxy', 1); // 1 = доверять только первому прокси (nginx)
+
 // Security headers with Helmet
 app.use(helmet({
   contentSecurityPolicy: {
