@@ -422,7 +422,6 @@ SorokaFood/
 │   │   │   ├── Home.tsx            # Главная (с фильтрами All/Newest/Popular/Photo)
 │   │   │   ├── RecipeDetail.tsx    # Детальная страница рецепта (с honeypot)
 │   │   │   ├── CategoryPage.tsx    # Рецепты категории
-│   │   │   ├── CuisinePage.tsx     # Рецепты кухни мира
 │   │   │   ├── SearchResults.tsx   # Результаты поиска
 │   │   │   ├── BestRecipes.tsx     # Лучшие рецепты
 │   │   │   └── admin/              # Админ-панель
@@ -591,7 +590,6 @@ GET    /api/recipes/:id            # Детали (только PUBLISHED)
 POST   /api/recipes/:id/view       # Инкремент просмотров (throttled 24h)
 GET    /api/recipes/search         # Поиск (?q=keyword&page=1&limit=12)
 GET    /api/recipes/stats          # Статистика (всего/пользователей/комментариев)
-GET    /api/recipes/cuisines/:type # По кухне мира (russian/european/asian/eastern)
 ```
 
 #### Категории

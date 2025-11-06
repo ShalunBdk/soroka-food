@@ -33,15 +33,6 @@ export const useSidebarData = () => {
         links: allCategoriesLinks.length > 0 ? allCategoriesLinks : [
           { title: 'Загрузка...', url: '#' }
         ]
-      },
-      {
-        title: 'По типу кухни',
-        links: [
-          { title: 'Русская кухня', url: '/cuisine/russian' },
-          { title: 'Европейская', url: '/cuisine/european' },
-          { title: 'Азиатская', url: '/cuisine/asian' },
-          { title: 'Восточная', url: '/cuisine/eastern' }
-        ]
       }
     ];
   }, [categories]);
