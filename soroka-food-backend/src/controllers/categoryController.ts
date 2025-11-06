@@ -12,7 +12,7 @@ export const getCategories = async (req: Request, res: Response): Promise<void> 
     orderBy: { name: 'asc' }
   });
 
-  const categoriesWithCount = categories.map(category => ({
+  const categoriesWithCount = categories.map((category: any) => ({
     id: category.id,
     name: category.name,
     slug: category.slug,
@@ -60,7 +60,7 @@ export const getRecipesByCategory = async (req: Request, res: Response): Promise
     return;
   }
 
-  const recipes = category.recipes.map(rc => {
+  const recipes = category.recipes.map((rc: any) => {
     const recipe = rc.recipe;
     return {
       id: recipe.id,
@@ -74,7 +74,7 @@ export const getRecipesByCategory = async (req: Request, res: Response): Promise
       date: recipe.date.toISOString().split('T')[0],
       views: recipe.views,
       rating: recipe.rating,
-      category: recipe.categories.map(c => c.category.name),
+      category: recipe.categories.map((c: any) => c.category.name),
       tags: recipe.tags,
       commentsCount: recipe._count.comments
     };

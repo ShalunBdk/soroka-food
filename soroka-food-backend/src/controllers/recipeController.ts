@@ -45,7 +45,7 @@ export const getRecipes = async (req: Request, res: Response): Promise<void> => 
     prisma.recipe.count({ where })
   ]);
 
-  const recipesWithCategories = recipes.map(recipe => ({
+  const recipesWithCategories = recipes.map((recipe: any) => ({
     id: recipe.id,
     title: recipe.title,
     description: recipe.description,
@@ -58,7 +58,7 @@ export const getRecipes = async (req: Request, res: Response): Promise<void> => 
     views: recipe.views,
     rating: recipe.rating,
     status: recipe.status,
-    category: recipe.categories.map(c => c.category.name),
+    category: recipe.categories.map((c: any) => c.category.name),
     tags: recipe.tags,
     commentsCount: recipe._count.comments
   }));
@@ -110,7 +110,7 @@ export const getRecipeById = async (req: Request, res: Response): Promise<void> 
     views: recipe.views,
     rating: recipe.rating,
     status: recipe.status,
-    category: recipe.categories.map(c => c.category.name),
+    category: recipe.categories.map((c: any) => c.category.name),
     tags: recipe.tags,
     ingredients: recipe.ingredients,
     instructions: recipe.instructions,

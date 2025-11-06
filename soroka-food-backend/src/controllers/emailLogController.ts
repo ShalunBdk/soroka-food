@@ -62,7 +62,7 @@ export const getEmailLogs = async (req: AuthRequest, res: Response): Promise<voi
   ]);
 
   res.json({
-    logs: logs.map(log => ({
+    logs: logs.map((log: any) => ({
       id: log.id,
       recipient: log.recipient,
       subscriberEmail: log.subscriber.email,
@@ -116,14 +116,14 @@ export const getEmailLogStats = async (req: AuthRequest, res: Response): Promise
   });
 
   // Get template names for stats
-  const templateIds = templateStats.map(s => s.templateId!);
+  const templateIds = templateStats.map((s: any) => s.templateId!);
   const templates = await prisma.emailTemplate.findMany({
     where: { id: { in: templateIds } },
     select: { id: true, name: true, type: true }
   });
 
-  const templateStatsWithNames = templateStats.map(stat => {
-    const template = templates.find(t => t.id === stat.templateId);
+  const templateStatsWithNames = templateStats.map((stat: any) => {
+    const template = templates.find((t: any) => t.id === stat.templateId);
     return {
       templateId: stat.templateId,
       templateName: template?.name || 'Unknown',

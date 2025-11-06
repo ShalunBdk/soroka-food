@@ -1,5 +1,8 @@
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// In production, use relative path since frontend and backend are served from same server
+// In development, use localhost:3000
+const API_BASE_URL = import.meta.env.VITE_API_URL ||
+  (import.meta.env.MODE === 'production' ? '/api' : 'http://localhost:3000/api');
 
 // API Error class
 export class ApiError extends Error {
