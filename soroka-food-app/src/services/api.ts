@@ -167,10 +167,6 @@ export const api = {
       return apiRequest(`/categories/${slug}/recipes?page=${page}&limit=${limit}`);
     },
 
-    async getByCuisine(type: string, page = 1, limit = 9): Promise<{ cuisine: any; recipes: any[]; pagination: any }> {
-      return apiRequest(`/recipes/cuisines/${type}?page=${page}&limit=${limit}`);
-    },
-
     async search(query: string, page = 1, limit = 9): Promise<{ query: string; data: any[]; pagination: any }> {
       return apiRequest(`/recipes/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
     },

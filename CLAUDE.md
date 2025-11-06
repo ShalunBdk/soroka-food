@@ -34,7 +34,7 @@ This file provides guidance to Claude Code when working with this repository.
 **Public**:
 - `/` - Home with tab filters (All/Newest/Popular/With Photo)
 - `/recipe/:id` - Recipe detail with social sharing, comments, nutrition
-- `/category/:slug`, `/cuisine/:type`, `/search?q=`, `/best` - Filtering/search
+- `/category/:slug`, `/search?q=`, `/best` - Filtering/search
 - `/about`, `/contact`, `/rules`, `/advertising` - Editable static pages
 
 **Admin** (`/admin/*` - JWT protected, role-based access):
@@ -42,7 +42,7 @@ This file provides guidance to Claude Code when working with this repository.
 
 ### API Endpoints
 
-**Public**: `/api/auth/login`, `/api/recipes` (supports ?sort=newest|popular|photo), `/api/recipes/:id`, `/api/recipes/:id/view`, `/api/recipes/search`, `/api/recipes/stats`, `/api/recipes/cuisines/:type`, `/api/categories`, `/api/categories/:slug/recipes`, `/api/settings`, `/api/static-pages/:slug`, `/api/comments`, `/api/newsletter/subscribe`, `/api/newsletter/verify/:token`, `/api/newsletter/unsubscribe/:token`
+**Public**: `/api/auth/login`, `/api/recipes` (supports ?sort=newest|popular|photo), `/api/recipes/:id`, `/api/recipes/:id/view`, `/api/recipes/search`, `/api/recipes/stats`, `/api/categories`, `/api/categories/:slug/recipes`, `/api/settings`, `/api/static-pages/:slug`, `/api/comments`, `/api/newsletter/subscribe`, `/api/newsletter/verify/:token`, `/api/newsletter/unsubscribe/:token`
 
 **Protected** (requires `Authorization: Bearer <token>`):
 - `/api/admin/*` - stats (MOD+), recipes (MOD+), categories (MOD+), tags (MOD+), comments (MOD+ including bulk actions), newsletter (ADMIN+), users (ADMIN+), settings (ADMIN+), static-pages (ADMIN+), email-logs (ADMIN+), smtp (SUPER_ADMIN only), email-templates (SUPER_ADMIN only), spam-filter (SUPER_ADMIN only), logs (SUPER_ADMIN only)
@@ -66,7 +66,7 @@ This file provides guidance to Claude Code when working with this repository.
 ```
 soroka-food-app/src/
 ├── components/      # Header (dynamic logo/name), Footer, RecipeCard, Pagination, Sidebar, SiteStats
-├── pages/           # Home, RecipeDetail (with honeypot), CategoryPage, CuisinePage, SearchResults, BestRecipes, static pages
+├── pages/           # Home, RecipeDetail (with honeypot), CategoryPage, SearchResults, BestRecipes, static pages
 ├── pages/admin/     # Dashboard, AdminRecipes, RecipeForm, AdminStaticPages, AdminSettings, AdminSpamFilter, AdminComments (with bulk actions), AdminUsers, UserForm, AdminLogs, etc.
 ├── hooks/           # useCategories, useSidebarData
 ├── contexts/        # SettingsContext (global state, loads once), ToastContext
@@ -113,7 +113,7 @@ soroka-food-backend/src/
 
 ### Features
 - **Search**: Case-insensitive across title/description/tags, supports pagination
-- **Filtering**: `?sort=newest|popular|photo`, by category/cuisine
+- **Filtering**: `?sort=newest|popular|photo`, by category
 - **Comments**:
   - Submit → Auto spam check → PENDING/SPAM → Admin moderates (APPROVED/PENDING/SPAM) → Display APPROVED only
   - **Pagination**: `GET /api/comments/recipe/:id?page=1&limit=20` (max 100 per page), "Load More" button shows remaining count
@@ -121,7 +121,7 @@ soroka-food-backend/src/
 - **Tags**: Global CRUD system - view usage stats, rename across all recipes, delete with confirmation
 - **Static Pages**: Database-driven, editable via admin with HTML editor, sanitized with DOMPurify
 - **Social Sharing**: VK, Telegram, WhatsApp, copy link (RecipeDetail.tsx:116-174)
-- **Sidebar**: Dynamic categories (useSidebarData hook), top 5 by recipe count, cuisine types
+- **Sidebar**: Dynamic categories (useSidebarData hook), top 5 by recipe count
 - **Stats**: Real-time site statistics (SiteStats component fetches from `/api/recipes/stats` - recipesCount, commentsCount, viewsCount)
 
 ### User Management & Role-Based Access Control
@@ -463,7 +463,6 @@ All indexes created via Prisma schema `@@index()` directive and applied via `npx
 - `/api/recipes/:id` - 10 minutes (600s)
 - `/api/recipes/search` - 5 minutes
 - `/api/recipes/stats` - 10 minutes
-- `/api/recipes/cuisines/:type` - 5 minutes
 - `/api/categories` - 30 minutes (1800s, rarely changes)
 - `/api/categories/:slug/recipes` - 5 minutes
 
@@ -596,7 +595,7 @@ BACKEND_URL=http://localhost:3000  # For API URLs in emails
 ## Recent Updates & Features
 
 **Key Features**:
-- Full-text search (title/description/tags), tag-based navigation, cuisine filtering (Russian/European/Asian/Eastern)
+- Full-text search (title/description/tags), tag-based navigation
 - Dynamic sidebar (categories from DB), real-time statistics (recipes/users/comments)
 - Tab filtering (All/Newest/Popular/With Photo) on home page
 - Static pages editable via admin panel (About, Contact, Rules, Advertising)

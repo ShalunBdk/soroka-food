@@ -4,7 +4,6 @@ import Footer from './components/Footer/Footer';
 import Home from './pages/Home';
 import RecipeDetail from './pages/RecipeDetail';
 import CategoryPage from './pages/CategoryPage';
-import CuisinePage from './pages/CuisinePage';
 import SearchResults from './pages/SearchResults';
 import BestRecipes from './pages/BestRecipes';
 import About from './pages/About';
@@ -77,13 +76,6 @@ function App() {
             <>
               <Header />
               <CategoryPage />
-              <Footer />
-            </>
-          } />
-          <Route path="/cuisine/:type" element={
-            <>
-              <Header />
-              <CuisinePage />
               <Footer />
             </>
           } />
