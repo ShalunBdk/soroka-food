@@ -256,79 +256,130 @@
 
 ---
 
-## 🚀 Быстрый старт
+## 🚀 Быстрый старт с Docker
 
 ### Предварительные требования
-- **Node.js** 18+ ([скачать](https://nodejs.org/))
-- **PostgreSQL** 12+ ([скачать](https://www.postgresql.org/download/))
-- **Redis** (опционально, для кеширования) - ([скачать](https://redis.io/download/))
-  - _Приложение работает без Redis с graceful fallback_
-- **npm** или **yarn**
+- **Docker** 20.10+ ([скачать](https://www.docker.com/get-started))
+- **Docker Compose** 2.0+ (обычно идёт в комплекте с Docker Desktop)
 
-### Установка за 5 минут
+### Развёртывание за 3 минуты
 
-#### 1️⃣ Клонирование и установка зависимостей
+#### 1️⃣ Клонирование репозитория
 ```bash
-# Клонировать репозиторий
 git clone https://github.com/yourusername/soroka-food.git
 cd soroka-food
-
-# Установить все зависимости (корень, frontend, backend)
-npm run install:all
 ```
 
-#### 2️⃣ Настройка базы данных
+#### 2️⃣ Настройка переменных окружения
+Создать файл `.env` в корне проекта (скопировать из .env.example):
 ```bash
-# Запустить PostgreSQL (Windows)
-net start postgresql-x64-17
-
-# Создать базу данных
-createdb -U postgres soroka-food
-# Или: "C:\Program Files\PostgreSQL\17\bin\createdb" -U postgres soroka-food
+cp .env.example .env
 ```
 
-Создать файл `soroka-food-backend/.env`:
+Отредактировать `.env` и заполнить обязательные поля:
 ```env
-# База данных (URL-encode спецсимволы: # → %23, @ → %40)
-DATABASE_URL="postgresql://postgres:ВАШ_ПАРОЛЬ@localhost:5432/soroka-food"
+# Database password для PostgreSQL
+DB_PASSWORD=your_secure_password_here
 
-# JWT токены (ОБЯЗАТЕЛЬНО сгенерируйте новый!)
-JWT_SECRET=<сгенерируйте 64+ символов>
+# JWT secret (ОБЯЗАТЕЛЬНО сгенерируйте новый!)
 # Генерация: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-JWT_EXPIRES_IN=7d
-
-# Сервер
-PORT=3000
-NODE_ENV=development
-
-# CORS (добавьте production домены)
-ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
-
-# Загрузка файлов
-MAX_FILE_SIZE=5242880  # 5MB
-
-# Redis (опционально - для кеширования, app работает без него)
-# REDIS_URL=redis://localhost:6379
+JWT_SECRET=your_generated_jwt_secret_here
 ```
 
+#### 3️⃣ Запуск всех сервисов
 ```bash
-# Применить миграции и загрузить начальные данные
-npm run prisma:migrate
-npm run prisma:seed
+# Собрать и запустить все контейнеры (PostgreSQL, Redis, Backend, Frontend)
+docker-compose up -d
+
+# Дождаться готовности сервисов (проверка health checks)
+docker-compose ps
+```
+
+#### 4️⃣ Загрузка начальных данных
+```bash
+# Применить миграции БД и загрузить seed (50+ рецептов)
+docker-compose exec backend npx prisma migrate deploy
 docker-compose exec backend node dist/prisma/seed.js
 ```
 
-#### 3️⃣ Запуск
-```bash
-# Development (frontend :5173 + backend :3000)
-npm run dev
+🎉 **Готово!** Откройте [http://localhost](http://localhost) в браузере
 
-# Production (одним сервером на :3000)
-npm run build
-npm run start:prod
+---
+
+### 📦 Что запущено?
+
+| Сервис | Контейнер | Порт | Описание |
+|--------|-----------|------|----------|
+| **Frontend** | soroka-food-web | 80 | React приложение (Nginx) |
+| **Backend** | soroka-food-api | 3000 | Express API + static files |
+| **PostgreSQL** | soroka-food-db | 5432 | База данных |
+| **Redis** | soroka-food-redis | 6379 | Кеширование (опционально) |
+
+---
+
+### 🔧 Полезные команды Docker
+
+```bash
+# Просмотр логов всех сервисов
+docker-compose logs -f
+
+# Просмотр логов конкретного сервиса
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# Остановка всех сервисов
+docker-compose down
+
+# Остановка + удаление volumes (БД, uploads, логи)
+docker-compose down -v
+
+# Перезапуск сервиса после изменений
+docker-compose restart backend
+
+# Пересборка после изменения кода
+docker-compose up -d --build
+
+# Вход в контейнер backend (для отладки)
+docker-compose exec backend sh
+
+# Выполнение команд в контейнере
+docker-compose exec backend npm run prisma:studio
+docker-compose exec backend npx prisma migrate dev
 ```
 
-🎉 **Готово!** Откройте [http://localhost:5173](http://localhost:5173) (dev) или [http://localhost:3000](http://localhost:3000) (prod)
+---
+
+### 🛠️ Локальная разработка (без Docker)
+
+Если хотите разрабатывать локально без Docker:
+
+<details>
+<summary>Развернуть инструкции для локальной разработки</summary>
+
+#### Предварительные требования
+- **Node.js** 18+ ([скачать](https://nodejs.org/))
+- **PostgreSQL** 12+ ([скачать](https://www.postgresql.org/download/))
+- **Redis** (опционально) - ([скачать](https://redis.io/download/))
+
+#### Установка
+```bash
+# 1. Установить зависимости
+npm run install:all
+
+# 2. Создать БД
+createdb -U postgres soroka-food
+
+# 3. Создать файл soroka-food-backend/.env
+# (см. soroka-food-backend/.env.example для примера)
+
+# 4. Применить миграции и seed
+npm run prisma:migrate
+npm run prisma:seed
+
+# 5. Запустить dev серверы
+npm run dev  # Frontend :5173 + Backend :3000
+```
+</details>
 
 ---
 
@@ -350,45 +401,6 @@ npm run start:prod
 - ✅ **100+ комментариев** - с разными статусами модерации
 - ✅ **3 администратора** - для тестирования ролей
 - ✅ **Настройки сайта** - готовые к использованию
-
----
-
-## 📋 Команды
-
-### Разработка
-```bash
-npm run dev                # Frontend + Backend одновременно
-npm run dev:frontend       # Только frontend (:5173)
-npm run dev:backend        # Только backend (:3000)
-```
-
-### Сборка
-```bash
-npm run build              # Собрать frontend + backend
-npm run build:frontend     # Только frontend
-npm run build:backend      # Только backend
-```
-
-### Production
-```bash
-npm start                  # Запустить production (одним сервером :3000)
-npm run start:prod         # Alias для npm start
-npm run start:backend      # Только backend production
-npm run start:frontend     # Frontend preview (:4173)
-```
-
-### База данных
-```bash
-npm run prisma:migrate     # Применить миграции
-npm run prisma:seed        # Загрузить начальные данные (50+ рецептов)
-npm run prisma:studio      # Открыть Prisma Studio (GUI для БД)
-```
-
-### Другое
-```bash
-npm run install:all        # Установить все зависимости
-npm run lint               # Запустить линтер (если настроен)
-```
 
 ---
 
@@ -750,88 +762,156 @@ POST   /api/upload/step-images     # Загрузить фото шагов (max
 
 ---
 
-## 🚦 Production Deployment
+## 🚦 Production Deployment с Docker
 
 ### 🔐 Чеклист безопасности
 
-- [ ] **JWT_SECRET** - сгенерировать новый (64+ символов):
+- [ ] **Сгенерировать надёжные секреты**:
   ```bash
+  # JWT Secret (64+ символов)
   node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-  ```
-- [ ] **ALLOWED_ORIGINS** - добавить production домены (через запятую)
-- [ ] **NODE_ENV=production** - установить в .env
-- [ ] **.env в .gitignore** - проверить что не коммитится
-- [ ] **Сменить дефолтные пароли** - admin/admin123, admin2/admin456, moderator/moderator123
-- [ ] **PostgreSQL** - настроить production БД (проверить URL-encoding спецсимволов)
-- [ ] **SSL/HTTPS** - через reverse proxy (nginx/Caddy)
-- [ ] **Тестирование** - прогнать `npm run build && npm run start:prod` локально
 
-### 📦 Production Build
+  # DB Password (сложный пароль)
+  openssl rand -base64 32
+
+  # Email Encryption Key (32 символа)
+  node -e "console.log(require('crypto').randomBytes(32).toString('hex').substring(0, 32))"
+  ```
+- [ ] **Обновить .env** - заполнить production значения
+- [ ] **ALLOWED_ORIGINS** - указать production домены
+- [ ] **Сменить дефолтные пароли админов** - admin/admin123, admin2/admin456, moderator/moderator123
+- [ ] **SSL/HTTPS** - настроить reverse proxy (Nginx/Traefik/Caddy)
+- [ ] **.env в .gitignore** - проверить что не коммитится в Git
+- [ ] **Backup стратегия** - настроить автоматическое резервное копирование БД и uploads
+
+---
+
+### 🐳 Docker Production Build
+
+#### 1️⃣ Подготовка сервера
 
 ```bash
-# 1. Сборка
-npm run build                # Собирает frontend + backend
+# Обновить систему (Ubuntu/Debian)
+sudo apt update && sudo apt upgrade -y
 
-# 2. Запуск
-npm run start:prod           # Запускает на :3000 (backend serving frontend)
+# Установить Docker и Docker Compose
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
 
-# 3. Проверка
-curl http://localhost:3000/api/health  # Должен вернуть {"status":"ok"}
+# Установить Docker Compose (если нет)
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
 ```
 
-### 🌍 Environment Variables для Production
+#### 2️⃣ Настройка production переменных
 
+Создать `.env` файл в корне проекта:
 ```env
-# Database (use production PostgreSQL URL)
-DATABASE_URL="postgresql://prod_user:strong_password@db.example.com:5432/soroka_food_prod"
+# Database
+DB_PASSWORD=<STRONG_PASSWORD_HERE>
 
-# JWT (generate NEW secret!)
-JWT_SECRET=<NEW 64+ char secret>
-JWT_EXPIRES_IN=7d
+# JWT (ОБЯЗАТЕЛЬНО новый секрет для production!)
+JWT_SECRET=<GENERATED_64_CHAR_SECRET>
 
-# Server
-PORT=3000
-NODE_ENV=production
-
-# CORS (add your production domains)
+# CORS - Ваши production домены
 ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 
-# File upload
-MAX_FILE_SIZE=5242880  # 5MB
-
-# Redis (optional - app works without Redis with graceful fallback)
-REDIS_URL=redis://localhost:6379  # Or use cloud Redis (Upstash, Redis Cloud)
-
-# Email (for newsletter system)
-EMAIL_ENCRYPTION_KEY=<32-character-random-string>
+# Email
+EMAIL_ENCRYPTION_KEY=<32_CHAR_KEY>
 FRONTEND_URL=https://yourdomain.com
-BACKEND_URL=https://api.yourdomain.com
+BACKEND_URL=https://yourdomain.com
 ```
 
-### 🔧 Рекомендации по хостингу
+**Важные настройки для docker-compose.yml:**
+- Убедитесь что `NODE_ENV=production`
+- Проверьте `ALLOWED_ORIGINS` с вашим доменом
+- Установите сложные пароли для БД
 
-#### Варианты деплоя
-- **VPS** (DigitalOcean, AWS EC2, Hetzner) - полный контроль
-- **PaaS** (Railway, Render, Heroku) - простота
-- **Shared Hosting** - для небольших проектов
+#### 3️⃣ Запуск production окружения
 
-#### Nginx конфигурация (пример)
+```bash
+# Клонировать репозиторий на сервер
+git clone https://github.com/yourusername/soroka-food.git
+cd soroka-food
+
+# Создать и настроить .env
+nano .env
+
+# Собрать и запустить контейнеры в production режиме
+docker-compose up -d --build
+
+# Применить миграции БД
+docker-compose exec backend npx prisma migrate deploy
+
+# Загрузить начальные данные (первый запуск)
+docker-compose exec backend node dist/prisma/seed.js
+
+# Проверить статус всех сервисов
+docker-compose ps
+
+# Проверить логи
+docker-compose logs -f
+```
+
+#### 4️⃣ Health Check
+
+```bash
+# Проверить API
+curl http://localhost:3000/api/health
+# Должен вернуть: {"status":"ok"}
+
+# Проверить frontend (если настроен reverse proxy)
+curl http://localhost
+```
+
+---
+
+### 🌐 Настройка Reverse Proxy (Nginx + SSL)
+
+#### Установка Certbot для Let's Encrypt SSL
+
+```bash
+sudo apt install nginx certbot python3-certbot-nginx -y
+```
+
+#### Конфигурация Nginx
+
+Создать файл `/etc/nginx/sites-available/soroka-food`:
+
 ```nginx
+# Redirect HTTP to HTTPS
 server {
     listen 80;
-    server_name yourdomain.com;
+    listen [::]:80;
+    server_name yourdomain.com www.yourdomain.com;
     return 301 https://$server_name$request_uri;
 }
 
+# HTTPS Server
 server {
     listen 443 ssl http2;
-    server_name yourdomain.com;
+    listen [::]:443 ssl http2;
+    server_name yourdomain.com www.yourdomain.com;
 
-    ssl_certificate /path/to/cert.pem;
-    ssl_certificate_key /path/to/key.pem;
+    # SSL certificates (Let's Encrypt)
+    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
 
+    # SSL настройки
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # Security headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # Proxy настройки для frontend
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:80;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -841,8 +921,164 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
+
+    # API proxy (если нужен отдельный поддомен api.yourdomain.com)
+    # location /api {
+    #     proxy_pass http://localhost:3000;
+    #     proxy_http_version 1.1;
+    #     proxy_set_header Host $host;
+    #     proxy_set_header X-Real-IP $remote_addr;
+    #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    #     proxy_set_header X-Forwarded-Proto $scheme;
+    # }
+
+    # Client max body size (для загрузки изображений)
+    client_max_body_size 10M;
 }
 ```
+
+#### Активация конфигурации
+
+```bash
+# Создать symlink
+sudo ln -s /etc/nginx/sites-available/soroka-food /etc/nginx/sites-enabled/
+
+# Проверить конфигурацию
+sudo nginx -t
+
+# Получить SSL сертификат (Let's Encrypt)
+sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+
+# Перезапустить Nginx
+sudo systemctl restart nginx
+
+# Включить автозапуск
+sudo systemctl enable nginx
+```
+
+---
+
+### 🔄 CI/CD и обновления
+
+#### Обновление приложения
+
+```bash
+# 1. Остановить контейнеры
+docker-compose down
+
+# 2. Получить новый код
+git pull origin main
+
+# 3. Пересобрать и запустить
+docker-compose up -d --build
+
+# 4. Применить новые миграции (если есть)
+docker-compose exec backend npx prisma migrate deploy
+
+# 5. Проверить статус
+docker-compose ps
+docker-compose logs -f
+```
+
+#### Автоматизация с GitHub Actions (пример)
+
+<details>
+<summary>Пример .github/workflows/deploy.yml</summary>
+
+```yaml
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /path/to/soroka-food
+            git pull origin main
+            docker-compose down
+            docker-compose up -d --build
+            docker-compose exec -T backend npx prisma migrate deploy
+```
+</details>
+
+---
+
+### 💾 Backup и мониторинг
+
+#### Автоматический backup PostgreSQL
+
+Создать скрипт `/root/backup-soroka.sh`:
+```bash
+#!/bin/bash
+BACKUP_DIR="/backups/soroka-food"
+DATE=$(date +%Y%m%d_%H%M%S)
+mkdir -p $BACKUP_DIR
+
+# Backup PostgreSQL
+docker exec soroka-food-db pg_dump -U postgres soroka-food | gzip > $BACKUP_DIR/db_$DATE.sql.gz
+
+# Backup uploads
+tar -czf $BACKUP_DIR/uploads_$DATE.tar.gz soroka-food-backend/public/uploads/
+
+# Удалить старые бэкапы (старше 7 дней)
+find $BACKUP_DIR -name "*.gz" -mtime +7 -delete
+
+echo "Backup completed: $DATE"
+```
+
+Добавить в crontab:
+```bash
+sudo crontab -e
+# Ежедневный backup в 3:00
+0 3 * * * /root/backup-soroka.sh >> /var/log/soroka-backup.log 2>&1
+```
+
+#### Мониторинг
+
+```bash
+# Просмотр использования ресурсов контейнерами
+docker stats
+
+# Просмотр логов в реальном времени
+docker-compose logs -f --tail=100
+
+# Настроить логирование в файл (уже настроено в docker-compose.yml)
+# Логи доступны в volume: logs:/app/logs
+```
+
+---
+
+### 💻 Рекомендуемые характеристики сервера
+
+#### Минимальные требования
+- **CPU**: 2 ядра
+- **RAM**: 2GB
+- **Диск**: 20GB SSD
+- **ОС**: Ubuntu 20.04+ / Debian 10+ / CentOS 8+
+
+#### Рекомендуемые для production
+- **CPU**: 4 ядра
+- **RAM**: 4GB
+- **Диск**: 50GB SSD
+- **ОС**: Ubuntu 22.04 LTS
+
+#### Оптимальные (для высоконагруженных проектов)
+- **CPU**: 8 ядер
+- **RAM**: 8GB+
+- **Диск**: 100GB+ SSD
+- **ОС**: Ubuntu 22.04 LTS
+
+**Примечание**: Характеристики зависят от количества пользователей, объёма контента и использования Redis кеша.
 
 ---
 
@@ -988,7 +1224,124 @@ npm run prisma:generate
 
 ## 🐛 Troubleshooting
 
-### PostgreSQL не запускается
+### Docker
+
+#### Контейнеры не запускаются
+```bash
+# Проверить статус
+docker-compose ps
+
+# Проверить логи
+docker-compose logs
+
+# Перезапустить все сервисы
+docker-compose down
+docker-compose up -d
+
+# Полная переустановка (УДАЛИТ все данные!)
+docker-compose down -v
+docker-compose up -d --build
+```
+
+#### PostgreSQL в контейнере недоступен
+```bash
+# Проверить health check
+docker-compose ps postgres
+
+# Проверить логи БД
+docker-compose logs postgres
+
+# Войти в контейнер и проверить
+docker-compose exec postgres psql -U postgres -d soroka-food
+
+# Перезапустить PostgreSQL
+docker-compose restart postgres
+```
+
+#### Ошибка миграций Prisma в Docker
+```bash
+# 1. Проверить что PostgreSQL запущен
+docker-compose ps postgres
+
+# 2. Закрыть Prisma Studio если открыт
+docker-compose exec backend pkill -f "prisma studio"
+
+# 3. Применить миграции снова
+docker-compose exec backend npx prisma migrate deploy
+
+# 4. Если не помогает - пересоздать БД (ПОТЕРЯ ДАННЫХ!)
+docker-compose down -v
+docker-compose up -d
+docker-compose exec backend npx prisma migrate deploy
+docker-compose exec backend node dist/prisma/seed.js
+```
+
+#### Порт занят
+```bash
+# Проверить какой процесс использует порт
+sudo lsof -i :80   # Frontend
+sudo lsof -i :3000 # Backend
+sudo lsof -i :5432 # PostgreSQL
+
+# Остановить конфликтующий контейнер
+docker ps
+docker stop <container_id>
+
+# Изменить порты в docker-compose.yml
+# Например, для frontend:
+# ports:
+#   - "8080:80"  # вместо "80:80"
+```
+
+#### Изображения не отображаются
+```bash
+# Проверить volume с uploads
+docker volume ls
+docker volume inspect soroka-food_uploads
+
+# Проверить что файлы есть в контейнере
+docker-compose exec backend ls -la public/uploads/
+
+# Проверить права доступа
+docker-compose exec backend chmod -R 755 public/uploads/
+```
+
+#### Логи контейнера показывают ошибку "Cannot connect to database"
+```bash
+# Проверить что PostgreSQL готов
+docker-compose ps postgres
+# Должно быть "healthy" в статусе
+
+# Проверить переменные окружения
+docker-compose exec backend env | grep DATABASE_URL
+
+# Дождаться полной загрузки PostgreSQL (health check)
+docker-compose up -d
+# Подождать 10-15 секунд
+docker-compose restart backend
+```
+
+#### Ошибка "no space left on device"
+```bash
+# Очистить неиспользуемые Docker ресурсы
+docker system prune -a --volumes
+
+# Проверить использование диска
+df -h
+docker system df
+
+# Удалить старые образы
+docker image prune -a
+```
+
+---
+
+### Локальная разработка (без Docker)
+
+<details>
+<summary>Решение проблем для локальной установки</summary>
+
+#### PostgreSQL не запускается
 ```bash
 # Windows
 net start postgresql-x64-17
@@ -999,17 +1352,18 @@ sudo service postgresql start
 brew services start postgresql@14
 ```
 
-### Ошибка миграций Prisma
+#### Ошибка миграций Prisma
 ```bash
 # 1. Закрыть все подключения к БД (включая Prisma Studio)
 # 2. Перезапустить PostgreSQL
-net restart postgresql-x64-17
+net restart postgresql-x64-17  # Windows
+sudo service postgresql restart # Linux
 
 # 3. Попробовать снова
 npm run prisma:migrate
 ```
 
-### Порт занят
+#### Порт занят
 **Backend (3000)**:
 ```bash
 # Изменить PORT в soroka-food-backend/.env
@@ -1021,31 +1375,44 @@ PORT=3001
 Vite автоматически выберет следующий доступный порт (5174, 5175...)
 ```
 
-### Изображения не отображаются
+#### CORS ошибки
+```env
+# soroka-food-backend/.env
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000,http://localhost:5174
+```
+</details>
+
+---
+
+### Общие проблемы
+
+#### Изображения не отображаются на фронтенде
 - ✅ **Используйте** `getImageUrl(path)` вместо хардкода
 - ✅ **Проверьте** что backend возвращает относительный путь (`/uploads/file.jpg`)
-- ✅ **Проверьте** что файл существует в `soroka-food-backend/public/uploads/`
+- ✅ **Проверьте** что файл существует в контейнере или локально
 
-### 404 на draft рецептах
+#### 404 на draft рецептах
 - ❌ **Public API** (`GET /api/recipes/:id`) - только PUBLISHED
 - ✅ **Admin API** (`GET /api/admin/recipes/:id`) - все рецепты (включая DRAFT)
 - 💡 В `RecipeForm.tsx` используется admin endpoint
 
-### CORS ошибки
-```typescript
-// soroka-food-backend/.env
-ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000,http://localhost:5174
-
-// Добавьте новые порты через запятую
-```
-
-### Ошибки авторизации
-```typescript
-// Проверить токен в localStorage
+#### Ошибки авторизации
+```javascript
+// Проверить токен в localStorage (в браузере)
 console.log(localStorage.getItem('token'))
 
-// Проверить срок действия (default 7 дней)
-// JWT_EXPIRES_IN=7d в .env
+// Токен истёк? (default 7 дней)
+// Проверьте JWT_EXPIRES_IN в .env или docker-compose.yml
+```
+
+#### Redis недоступен
+```bash
+# Docker
+docker-compose logs redis
+docker-compose restart redis
+
+# Приложение работает без Redis (graceful fallback)
+# Просто будет медленнее без кеша
 ```
 
 ---
