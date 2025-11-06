@@ -146,7 +146,7 @@ export const getAdminLogsStats = async (
   });
 
   // Get user details for top users
-  const userIds = logsByUser.map((log) => log.userId);
+  const userIds = logsByUser.map((log: any) => log.userId);
   const users = await prisma.user.findMany({
     where: {
       id: {
@@ -161,8 +161,8 @@ export const getAdminLogsStats = async (
   });
 
   // Combine user data with log counts
-  const topUsers = logsByUser.map((log) => {
-    const user = users.find((u) => u.id === log.userId);
+  const topUsers = logsByUser.map((log: any) => {
+    const user = users.find((u: any) => u.id === log.userId);
     return {
       userId: log.userId,
       username: user?.username || 'Unknown',
@@ -186,12 +186,12 @@ export const getAdminLogsStats = async (
 
   res.json({
     totalLogs,
-    topActions: logsByAction.map((log) => ({
+    topActions: logsByAction.map((log: any) => ({
       action: log.action,
       count: log._count.id,
     })),
     topUsers,
-    activityByDay: activityByDay.map((item) => ({
+    activityByDay: activityByDay.map((item: any) => ({
       date: item.date,
       count: Number(item.count),
     })),

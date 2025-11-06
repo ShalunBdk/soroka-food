@@ -38,7 +38,7 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
     select: { views: true }
   });
 
-  const totalViews = allRecipes.reduce((sum, r) => sum + r.views, 0);
+  const totalViews = allRecipes.reduce((sum: number, r: { views: number }) => sum + r.views, 0);
 
   // Calculate average views per recipe
   const avgViewsPerRecipe = totalRecipes > 0 ? Math.round(totalViews / totalRecipes) : 0;
@@ -54,7 +54,7 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
       totalViews,
       avgViewsPerRecipe
     },
-    recentRecipes: recentRecipes.map(r => ({
+    recentRecipes: recentRecipes.map((r: any) => ({
       id: r.id,
       title: r.title,
       image: r.image,
@@ -103,7 +103,7 @@ export const getRecipeById = async (req: Request, res: Response): Promise<void> 
     views: recipe.views,
     rating: recipe.rating,
     date: recipe.date.toISOString().split('T')[0],
-    categories: recipe.categories.map(c => ({ id: c.category.id, name: c.category.name })),
+    categories: recipe.categories.map((c: any) => ({ id: c.category.id, name: c.category.name })),
     commentsCount: recipe._count.comments,
     createdAt: recipe.createdAt,
     updatedAt: recipe.updatedAt
@@ -139,7 +139,7 @@ export const getAllRecipes = async (req: Request, res: Response): Promise<void> 
     prisma.recipe.count({ where })
   ]);
 
-  const formattedRecipes = recipes.map(r => ({
+  const formattedRecipes = recipes.map((r: any) => ({
     id: r.id,
     title: r.title,
     description: r.description,
@@ -148,7 +148,7 @@ export const getAllRecipes = async (req: Request, res: Response): Promise<void> 
     views: r.views,
     rating: r.rating,
     date: r.date.toISOString().split('T')[0],
-    categories: r.categories.map(c => ({ id: c.category.id, name: c.category.name })),
+    categories: r.categories.map((c: any) => ({ id: c.category.id, name: c.category.name })),
     commentsCount: r._count.comments,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt
@@ -458,7 +458,7 @@ export const getAllComments = async (req: Request, res: Response): Promise<void>
     orderBy: { createdAt: 'desc' }
   });
 
-  const formattedComments = comments.map(c => ({
+  const formattedComments = comments.map((c: any) => ({
     id: c.id,
     author: c.author,
     email: c.email,
@@ -575,7 +575,7 @@ export const bulkCommentsAction = async (req: AuthRequest, res: Response): Promi
     where: { id: { in: commentIds } },
     select: { recipeId: true }
   });
-  const affectedRecipeIds = [...new Set(affectedComments.map(c => c.recipeId))];
+  const affectedRecipeIds = [...new Set(affectedComments.map((c: any) => c.recipeId))];
 
   let result;
   if (action === 'delete') {
@@ -612,7 +612,7 @@ export const bulkCommentsAction = async (req: AuthRequest, res: Response): Promi
 
   // Invalidate cache for all affected recipes
   for (const recipeId of affectedRecipeIds) {
-    await invalidateCommentCache(recipeId);
+    await invalidateCommentCache(Number(recipeId));
   }
 
   res.json({
@@ -628,7 +628,7 @@ export const getAllSubscribers = async (req: Request, res: Response): Promise<vo
     orderBy: { subscribedDate: 'desc' }
   });
 
-  const formattedSubscribers = subscribers.map(s => ({
+  const formattedSubscribers = subscribers.map((s: any) => ({
     id: s.id,
     email: s.email,
     status: s.status,

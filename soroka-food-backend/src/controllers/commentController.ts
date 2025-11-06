@@ -135,7 +135,7 @@ export const getRecipeComments = async (req: Request, res: Response): Promise<vo
     })
   ]);
 
-  const formattedComments = comments.map(comment => ({
+  const formattedComments = comments.map((comment: any) => ({
     id: comment.id,
     author: comment.author,
     rating: comment.rating,
