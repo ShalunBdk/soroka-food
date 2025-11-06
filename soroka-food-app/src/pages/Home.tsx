@@ -45,11 +45,19 @@ const Home: React.FC = () => {
         }
 
         const response = await api.recipes.getAll(currentPage, recipesPerPage, sortParam);
-        setRecipes(response.data);
-        setTotalPages(response.pagination.totalPages);
+
+        // Handle null or invalid response
+        if (!response || typeof response !== 'object') {
+          throw new Error('Invalid response from server');
+        }
+
+        setRecipes(Array.isArray(response.data) ? response.data : []);
+        setTotalPages(response.pagination?.totalPages || 1);
       } catch (err) {
         setError('Не удалось загрузить рецепты');
         console.error('Error fetching recipes:', err);
+        setRecipes([]);
+        setTotalPages(1);
       } finally {
         setLoading(false);
       }
