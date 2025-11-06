@@ -84,7 +84,7 @@ export const builtInTemplates: BuiltInTemplate[] = [
 © 2025 Soroka Food. Все права защищены.
     `,
     variables: ['verificationUrl'],
-    type: 'VERIFICATION',
+    type: EmailTemplateType.VERIFICATION,
     isDefault: true
   },
   {
@@ -155,7 +155,7 @@ export const builtInTemplates: BuiltInTemplate[] = [
 © 2025 Soroka Food. Все права защищены.
     `,
     variables: ['siteUrl', 'unsubscribeUrl'],
-    type: 'WELCOME',
+    type: EmailTemplateType.WELCOME,
     isDefault: true
   },
   {
@@ -227,7 +227,7 @@ export const builtInTemplates: BuiltInTemplate[] = [
 © 2025 Soroka Food. Все права защищены.
     `,
     variables: ['recipeName', 'recipeDescription', 'recipeImage', 'cookingTime', 'servings', 'calories', 'recipeUrl', 'unsubscribeUrl'],
-    type: 'NEW_RECIPE',
+    type: EmailTemplateType.NEW_RECIPE,
     isDefault: true
   },
   {
@@ -279,7 +279,7 @@ export const builtInTemplates: BuiltInTemplate[] = [
 © 2025 Soroka Food. Все права защищены.
     `,
     variables: [],
-    type: 'UNSUBSCRIBE',
+    type: EmailTemplateType.UNSUBSCRIBE,
     isDefault: true
   }
 ];

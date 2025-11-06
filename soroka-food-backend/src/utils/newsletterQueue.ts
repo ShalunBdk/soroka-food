@@ -1,6 +1,6 @@
 import prisma from '../config/database';
 import { sendEmail } from './emailService';
-import { getTemplateByType } from './emailTemplates';
+import { getTemplateByType, EmailTemplateType } from './emailTemplates';
 import { logger } from '../config/logger';
 
 interface Recipe {
@@ -30,7 +30,7 @@ export async function sendNewRecipeNewsletter(recipe: Recipe): Promise<void> {
     }
 
     // Get the new-recipe email template
-    const template = await getTemplateByType('NEW_RECIPE');
+    const template = await getTemplateByType(EmailTemplateType.NEW_RECIPE);
     if (!template) {
       logger.error('New recipe email template not found');
       return;
@@ -114,7 +114,7 @@ export async function sendNewRecipeNewsletter(recipe: Recipe): Promise<void> {
 // Send test newsletter to a single email
 export async function sendTestNewsletter(recipe: Recipe, email: string): Promise<void> {
   try {
-    const template = await getTemplateByType('NEW_RECIPE');
+    const template = await getTemplateByType(EmailTemplateType.NEW_RECIPE);
     if (!template) {
       throw new Error('New recipe email template not found');
     }
