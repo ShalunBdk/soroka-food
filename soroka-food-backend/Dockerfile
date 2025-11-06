@@ -11,6 +11,10 @@ ENV npm_config_fetch_retry_mintimeout=20000
 ENV npm_config_fetch_retry_maxtimeout=120000
 ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
 
+# Configure Prisma mirrors for reliable installation
+ENV PRISMA_ENGINES_MIRROR=https://github.com/prisma/prisma-engines/releases
+ENV PRISMA_BINARIES_MIRROR=https://npmmirror.com/mirrors/prisma
+
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
@@ -40,6 +44,10 @@ ENV npm_config_fetch_retries=5
 ENV npm_config_fetch_retry_mintimeout=20000
 ENV npm_config_fetch_retry_maxtimeout=120000
 ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
+
+# Configure Prisma mirrors for reliable installation
+ENV PRISMA_ENGINES_MIRROR=https://github.com/prisma/prisma-engines/releases
+ENV PRISMA_BINARIES_MIRROR=https://npmmirror.com/mirrors/prisma
 
 # Copy package files
 COPY package*.json ./

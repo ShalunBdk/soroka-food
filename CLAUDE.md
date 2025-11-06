@@ -572,6 +572,9 @@ REDIS_URL=redis://localhost:6379  # Optional - app works without Redis with grac
 EMAIL_ENCRYPTION_KEY=<32-character-random-string>  # For SMTP password encryption
 FRONTEND_URL=http://localhost:5173  # For email verification links
 BACKEND_URL=http://localhost:3000  # For API URLs in emails
+# Prisma mirrors (fix for ECONNRESET during npm install on servers with limited connectivity)
+PRISMA_ENGINES_MIRROR=https://github.com/prisma/prisma-engines/releases  # Alternative mirror for Prisma engines
+PRISMA_BINARIES_MIRROR=https://npmmirror.com/mirrors/prisma  # Alternative mirror for Prisma binaries
 ```
 
 ### Production Checklist
@@ -591,6 +594,7 @@ BACKEND_URL=http://localhost:3000  # For API URLs in emails
 - **CORS issues**: Update CORS config if frontend port changes
 - **Images not displaying**: Use `getImageUrl()` helper, not hardcoded URLs
 - **404 on draft recipes**: Use admin endpoint for editing, not public endpoint
+- **Prisma ECONNRESET during Docker build**: This occurs when Prisma engines fail to download during `npm install`. Solution: Dockerfile includes `PRISMA_ENGINES_MIRROR` and `PRISMA_BINARIES_MIRROR` environment variables pointing to alternative mirrors (GitHub releases and npmmirror.com). These are already configured in Dockerfile and docker-compose.yml. If issues persist, ensure your server has stable internet connection or try building during off-peak hours.
 
 ## Recent Updates & Features
 

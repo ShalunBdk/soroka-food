@@ -31,6 +31,9 @@ services:
     build:
       context: ./soroka-food-backend
       dockerfile: Dockerfile
+      args:
+        - PRISMA_ENGINES_MIRROR=https://github.com/prisma/prisma-engines/releases
+        - PRISMA_BINARIES_MIRROR=https://npmmirror.com/mirrors/prisma
     container_name: soroka-food-api
     ports:
       - "3000:3000"
@@ -42,6 +45,9 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: 7d
       PORT: 3000
+      # Prisma mirrors for reliable installation
+      PRISMA_ENGINES_MIRROR: https://github.com/prisma/prisma-engines/releases
+      PRISMA_BINARIES_MIRROR: https://npmmirror.com/mirrors/prisma
     depends_on:
       postgres:
         condition: service_healthy
