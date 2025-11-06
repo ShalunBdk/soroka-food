@@ -2,18 +2,27 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Install build dependencies
+RUN apk add --no-cache openssl
+
+# Configure npm for better reliability
+ENV npm_config_fetch_retries=5
+ENV npm_config_fetch_retry_mintimeout=20000
+ENV npm_config_fetch_retry_maxtimeout=120000
+ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
+
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
-RUN npm ci
+# Install dependencies with retry logic
+RUN npm ci || npm ci || npm ci
+
+# Generate Prisma Client after installation
+RUN npx prisma generate
 
 # Copy source code
 COPY . .
-
-# Generate Prisma Client
-RUN npx prisma generate
 
 # Build application
 RUN npm run build
@@ -23,12 +32,21 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Install runtime dependencies
+RUN apk add --no-cache openssl
+
+# Configure npm for better reliability
+ENV npm_config_fetch_retries=5
+ENV npm_config_fetch_retry_mintimeout=20000
+ENV npm_config_fetch_retry_maxtimeout=120000
+ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
+
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install only production dependencies
-RUN npm ci --only=production
+# Install only production dependencies with retry logic
+RUN npm ci --only=production || npm ci --only=production || npm ci --only=production
 
 # Generate Prisma Client in production stage
 RUN npx prisma generate
