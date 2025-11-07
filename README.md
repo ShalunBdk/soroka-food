@@ -11,7 +11,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-12+-336791?logo=postgresql)](https://www.postgresql.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma)](https://www.prisma.io/)
 
-[Демо](#-демо) • [Возможности](#-ключевые-возможности) • [Установка](#-быстрый-старт) • [Документация](#-документация) • [Стек](#-технологический-стек)
+[Демо](https://soroka-demo.shbdk.ru/) • [Возможности](#-ключевые-возможности) • [Установка](#-быстрый-старт) • [Документация](#-документация) • [Стек](#-технологический-стек)
 
 </div>
 
