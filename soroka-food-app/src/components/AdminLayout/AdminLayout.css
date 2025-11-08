@@ -149,12 +149,63 @@
   }
 }
 
+/* Mobile menu toggle button */
+.mobile-menu-toggle {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  z-index: 101;
+}
+
+.mobile-menu-toggle span {
+  display: block;
+  width: 24px;
+  height: 3px;
+  background: #8b4513;
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+
+.mobile-menu-toggle:hover span {
+  background: #6d3410;
+}
+
+/* Mobile menu overlay */
+.mobile-menu-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+}
+
 @media (max-width: 768px) {
+  .mobile-menu-toggle {
+    display: flex;
+  }
+
+  .mobile-menu-overlay {
+    display: block;
+  }
+
   .admin-sidebar {
     position: fixed;
     transform: translateX(-100%);
-    transition: transform 0.3s;
+    transition: transform 0.3s ease-in-out;
     z-index: 100;
+    width: 280px;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .admin-sidebar.mobile-open {
+    transform: translateX(0);
   }
 
   .admin-main {
@@ -163,5 +214,22 @@
 
   .admin-content {
     padding: 1rem;
+  }
+
+  .admin-header-content {
+    gap: 1rem;
+  }
+
+  .admin-page-title {
+    font-size: 1.3rem;
+  }
+
+  .admin-username {
+    display: none;
+  }
+
+  .admin-logout-btn {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.85rem;
   }
 }

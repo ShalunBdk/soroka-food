@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { tokenManager } from '../../services/api';
 import './AdminLayout.css';
 
@@ -9,9 +10,30 @@ interface AdminLayoutProps {
 function AdminLayout({ children }: AdminLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const currentUser = tokenManager.getCurrentUser();
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   const isAdminOrAbove = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN';
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (isMobileMenuOpen && !target.closest('.admin-sidebar') && !target.closest('.mobile-menu-toggle')) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [isMobileMenuOpen]);
 
   const handleLogout = () => {
     localStorage.removeItem('admin_logged_in');
@@ -40,7 +62,12 @@ function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <div className="admin-layout">
-      <aside className="admin-sidebar">
+      {/* Mobile menu overlay */}
+      {isMobileMenuOpen && (
+        <div className="mobile-menu-overlay" onClick={() => setIsMobileMenuOpen(false)} />
+      )}
+
+      <aside className={`admin-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="admin-logo">
           <Link to="/">
             <h2>Soroka Admin</h2>
@@ -66,6 +93,15 @@ function AdminLayout({ children }: AdminLayoutProps) {
       <div className="admin-main">
         <header className="admin-header">
           <div className="admin-header-content">
+            <button
+              className="mobile-menu-toggle"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Открыть меню"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
             <h1 className="admin-page-title">
               {menuItems.find(item => item.path === location.pathname)?.label || 'Админ-панель'}
             </h1>
