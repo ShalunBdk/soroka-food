@@ -70,8 +70,8 @@ const Header: React.FC = () => {
 
       {/* Mobile fullscreen search */}
       {isMobileSearchOpen && (
-        <div className="mobile-search-overlay">
-          <div className="mobile-search-container">
+        <div className="mobile-search-overlay" onClick={toggleMobileSearch}>
+          <div className="mobile-search-container" onClick={(e) => e.stopPropagation()}>
             <form className="mobile-search-form" onSubmit={handleSearch}>
               <input
                 type="text"
