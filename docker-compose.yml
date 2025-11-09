@@ -61,6 +61,12 @@ services:
     build:
       context: ./soroka-food-app
       dockerfile: Dockerfile
+      args:
+        # API URL for Vite build-time embedding
+        # Use relative path /api since nginx proxies to backend
+        # For external API: https://api.yourdomain.com/api
+        VITE_API_URL: /api
+        VITE_APP_ENV: production
     container_name: soroka-food-web
     ports:
       - "80:80"

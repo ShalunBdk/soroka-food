@@ -578,6 +578,61 @@ PRISMA_ENGINES_MIRROR=https://github.com/prisma/prisma-engines/releases  # Alter
 PRISMA_BINARIES_MIRROR=https://npmmirror.com/mirrors/prisma  # Alternative mirror for Prisma binaries
 ```
 
+**Frontend** (.env) - for standalone deployment without Docker:
+```
+# IMPORTANT: In production, set to your actual domain with /api suffix
+VITE_API_URL=http://localhost:3000/api  # Development
+# Production examples:
+# VITE_API_URL=https://yourdomain.com/api
+# VITE_API_URL=http://your-server-ip:3000/api
+
+VITE_APP_ENV=production
+```
+
+### Docker Deployment
+
+**Build-time vs Runtime Environment Variables**:
+- **Backend**: Uses runtime environment variables (set in `docker-compose.yml` → `environment` section)
+- **Frontend**: Uses **build-time** environment variables (must be set in `docker-compose.yml` → `build.args` section)
+
+**IMPORTANT**: Vite embeds `VITE_*` variables during `npm run build`, NOT at runtime!
+
+**Default Docker Setup** (nginx proxy architecture):
+- Frontend (nginx) listens on port 80
+- nginx proxies `/api/*` and `/uploads/*` to backend
+- `VITE_API_URL=/api` (relative path) - already configured in Dockerfile
+- No domain needed, nginx handles routing internally
+
+**Deployment Steps**:
+```bash
+# 1. Set environment variables in docker-compose.yml or .env file
+# For backend (runtime):
+#   DATABASE_URL, JWT_SECRET, ALLOWED_ORIGINS, etc.
+# For frontend (build-time):
+#   VITE_API_URL=/api (default, already set)
+
+# 2. Build and start containers
+docker-compose up -d --build
+
+# 3. Run database migrations
+docker-compose exec backend npx prisma migrate deploy
+docker-compose exec backend npx prisma db seed
+```
+
+**Custom Domain Setup**:
+If frontend and backend are on different domains, update in `docker-compose.yml`:
+```yaml
+frontend:
+  build:
+    args:
+      VITE_API_URL: https://api.yourdomain.com/api  # External API
+```
+
+**Troubleshooting Docker Images**:
+- **Images show localhost URLs**: Frontend was built without correct `VITE_API_URL`. Rebuild: `docker-compose up -d --build frontend`
+- **API works but images don't**: Vite build-time env issue. Check `docker-compose.yml` → `build.args` section
+- **Rebuild after env changes**: `docker-compose down && docker-compose up -d --build`
+
 ### Production Checklist
 - [ ] Strong JWT_SECRET (64+ chars)
 - [ ] ALLOWED_ORIGINS with production domain(s)
@@ -593,7 +648,8 @@ PRISMA_BINARIES_MIRROR=https://npmmirror.com/mirrors/prisma  # Alternative mirro
 - **Migration lock**: Restart PostgreSQL service
 - **Port conflicts**: Ports 3000 (backend) or 5173 (frontend) in use
 - **CORS issues**: Update CORS config if frontend port changes
-- **Images not displaying**: Use `getImageUrl()` helper, not hardcoded URLs
+- **Images not displaying**: Use `getImageUrl()` helper, not hardcoded URLs. In Docker: ensure `VITE_API_URL` is set correctly in `docker-compose.yml` build args and rebuild frontend container
+- **Images show localhost in production**: Frontend built with wrong `VITE_API_URL`. For Docker: check `docker-compose.yml` → `frontend.build.args.VITE_API_URL` and rebuild with `docker-compose up -d --build frontend`
 - **404 on draft recipes**: Use admin endpoint for editing, not public endpoint
 - **Nginx proxy error (ERR_ERL_UNEXPECTED_X_FORWARDED_FOR)**: When using nginx or other reverse proxy, Express must trust proxy headers. Solution: `app.set('trust proxy', 1)` is already configured in index.ts. Ensure nginx passes X-Forwarded-For header (`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`)
 - **Prisma ECONNRESET during Docker build**: This occurs when Prisma engines fail to download during `npm install`. Solution: Dockerfile includes `PRISMA_ENGINES_MIRROR` and `PRISMA_BINARIES_MIRROR` environment variables pointing to alternative mirrors (GitHub releases and npmmirror.com). These are already configured in Dockerfile and docker-compose.yml. If issues persist, ensure your server has stable internet connection or try building during off-peak hours.
