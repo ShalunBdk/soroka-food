@@ -13,6 +13,17 @@ COPY package*.json ./
 RUN npm ci || npm ci || npm ci
 
 COPY . .
+
+# Build arguments for Vite environment variables
+# These are available ONLY during build, not at runtime
+ARG VITE_API_URL=/api
+ARG VITE_APP_ENV=production
+
+# Set as environment variables for Vite build process
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_APP_ENV=$VITE_APP_ENV
+
+# Build with environment variables embedded
 RUN npm run build
 
 # Nginx stage for serving static files

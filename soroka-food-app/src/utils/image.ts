@@ -1,4 +1,19 @@
-const API_BASE_URL = 'http://localhost:3000';
+// API Configuration
+// In production, use relative path since frontend and backend are served from same server
+// In development, use localhost:3000
+// For images, we need base URL without /api suffix
+const getApiBaseUrl = () => {
+  // If VITE_API_URL is set (e.g., http://localhost:3000/api), extract base without /api
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (apiUrl) {
+    return apiUrl.replace('/api', '');
+  }
+
+  // Fallback: in production use empty string (relative paths), in development use localhost
+  return import.meta.env.MODE === 'production' ? '' : 'http://localhost:3000';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 /**
  * Get full image URL
