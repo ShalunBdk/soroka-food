@@ -150,6 +150,10 @@ function RecipeForm() {
   };
 
   const handleCategoryToggle = (categoryId: number) => {
+    if (categoryId == null || typeof categoryId !== 'number') {
+      console.error('Invalid category ID:', categoryId);
+      return;
+    }
     setSelectedCategoryIds(prev =>
       prev.includes(categoryId) ? prev.filter(id => id !== categoryId) : [...prev, categoryId]
     );
@@ -180,7 +184,9 @@ function RecipeForm() {
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
 
       // Select the newly created category
-      setSelectedCategoryIds(prev => [...prev, newCategory.id]);
+      if (newCategory?.id != null && typeof newCategory.id === 'number') {
+        setSelectedCategoryIds(prev => [...prev, newCategory.id]);
+      }
 
       // Reset form
       setNewCategoryName('');
@@ -315,7 +321,7 @@ function RecipeForm() {
         })),
         tips: tips.filter(tip => tip),
         nutrition: { calories, protein, fat, carbs },
-        categories: selectedCategoryIds,
+        categories: selectedCategoryIds.filter(id => id != null && typeof id === 'number'),
         status
       };
 
