@@ -121,6 +121,11 @@ function RecipeForm() {
                 }
               }
 
+              // Clear quantity if unit is "по вкусу"
+              if (unit === 'по вкусу') {
+                quantity = undefined;
+              }
+
               grouped[cat].push({
                 name: ing.name,
                 amount: ing.amount,
@@ -419,13 +424,15 @@ function RecipeForm() {
       ingredientGroups.forEach(group => {
         group.ingredients.forEach(ing => {
           if (ing.name) {
+            // Clear quantity if unit is "по вкусу"
+            const finalQuantity = ing.unit === 'по вкусу' ? undefined : ing.quantity;
             // Ensure amount is populated from quantity and unit
-            const amount = ing.quantity && ing.unit ? `${ing.quantity} ${ing.unit}` : ing.amount;
+            const amount = finalQuantity && ing.unit ? `${finalQuantity} ${ing.unit}` : (ing.amount || ing.unit || '');
 
             flatIngredients.push({
               name: ing.name,
               amount: amount,
-              quantity: ing.quantity,
+              quantity: finalQuantity,
               unit: ing.unit,
               category: group.category || undefined
             });

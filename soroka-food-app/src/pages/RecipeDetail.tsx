@@ -389,7 +389,7 @@ const RecipeDetail: React.FC = () => {
                   <ul className="ingredients-list">
                     {grouped[category].map((ingredient, index) => (
                       <li key={index}>
-                        {ingredient.quantity && ingredient.unit ? (
+                        {ingredient.quantity && ingredient.unit && ingredient.unit !== 'по вкусу' ? (
                           <>
                             {ingredient.name} —{' '}
                             {currentServings !== recipe.servings ? (
