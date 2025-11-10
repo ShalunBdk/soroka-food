@@ -62,6 +62,9 @@ RUN npx prisma generate
 # Copy built application
 COPY --from=builder /app/dist ./dist
 
+# Copy scripts for maintenance tasks
+COPY scripts ./scripts
+
 # Create directory for uploads
 RUN mkdir -p public/uploads
 
