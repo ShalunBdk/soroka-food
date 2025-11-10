@@ -206,9 +206,15 @@ function RecipeForm() {
       }
     } else if (field === 'unit') {
       ingredient.unit = value as string;
-      // Auto-update amount when unit changes
-      if (ingredient.quantity && ingredient.unit) {
-        ingredient.amount = `${ingredient.quantity} ${ingredient.unit}`;
+      // Clear quantity when unit is "по вкусу"
+      if (value === 'по вкусу') {
+        ingredient.quantity = undefined;
+        ingredient.amount = 'по вкусу';
+      } else {
+        // Auto-update amount when unit changes
+        if (ingredient.quantity && ingredient.unit) {
+          ingredient.amount = `${ingredient.quantity} ${ingredient.unit}`;
+        }
       }
     } else if (field === 'amount') {
       ingredient.amount = value as string;
@@ -895,7 +901,12 @@ function RecipeForm() {
               <div style={{ marginLeft: '1rem' }}>
                 {group.ingredients.map((ingredient, ingIndex) => (
                   <div key={ingIndex} style={{ marginBottom: '0.75rem' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.2fr auto', gap: '0.5rem', alignItems: 'center' }}>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: ingredient.unit === 'по вкусу' ? '2fr 1.2fr auto' : '2fr 1fr 1.2fr auto',
+                      gap: '0.5rem',
+                      alignItems: 'center'
+                    }}>
                       <input
                         type="text"
                         placeholder="Название ингредиента"
@@ -903,15 +914,17 @@ function RecipeForm() {
                         onChange={(e) => handleIngredientChange(groupIndex, ingIndex, 'name', e.target.value)}
                         style={{ padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
                       />
-                      <input
-                        type="number"
-                        placeholder="Кол-во"
-                        step="0.1"
-                        min="0"
-                        value={ingredient.quantity || ''}
-                        onChange={(e) => handleIngredientChange(groupIndex, ingIndex, 'quantity', e.target.value)}
-                        style={{ padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
-                      />
+                      {ingredient.unit !== 'по вкусу' && (
+                        <input
+                          type="number"
+                          placeholder="Кол-во"
+                          step="0.1"
+                          min="0"
+                          value={ingredient.quantity || ''}
+                          onChange={(e) => handleIngredientChange(groupIndex, ingIndex, 'quantity', e.target.value)}
+                          style={{ padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                        />
+                      )}
                       <select
                         value={ingredient.unit || 'г'}
                         onChange={(e) => handleIngredientChange(groupIndex, ingIndex, 'unit', e.target.value)}
