@@ -12,7 +12,7 @@ export default function Unsubscribe() {
   useEffect(() => {
     if (!token) {
       setStatus('error');
-      setMessage('Invalid unsubscribe link');
+      setMessage('Недействительная ссылка для отписки');
       return;
     }
 
@@ -23,10 +23,10 @@ export default function Unsubscribe() {
     try {
       const result = await api.newsletter.unsubscribe(token!);
       setStatus('success');
-      setMessage(result.message || 'You have been unsubscribed successfully');
+      setMessage(result.message || 'Вы успешно отписались от рассылки');
     } catch (error: any) {
       setStatus('error');
-      setMessage(error.message || 'Unsubscribe failed. The link may be invalid.');
+      setMessage(error.message || 'Отписка не удалась. Ссылка может быть недействительной.');
     }
   };
 
@@ -36,24 +36,24 @@ export default function Unsubscribe() {
         {status === 'loading' && (
           <div className="unsubscribe-loading">
             <div className="spinner"></div>
-            <h2>Processing your request...</h2>
-            <p>Please wait a moment</p>
+            <h2>Обработка вашего запроса...</h2>
+            <p>Пожалуйста, подождите</p>
           </div>
         )}
 
         {status === 'success' && (
           <div className="unsubscribe-success">
             <div className="success-icon">👋</div>
-            <h2>Unsubscribed Successfully</h2>
+            <h2>Отписка выполнена успешно</h2>
             <p>{message}</p>
             <p className="info-text">
-              We're sorry to see you go! You won't receive any more newsletter emails from us.
+              Нам жаль вас отпускать! Вы больше не будете получать письма с нашими рецептами.
             </p>
             <p className="resubscribe-text">
-              Changed your mind? You can always subscribe again on our homepage.
+              Передумали? Вы всегда можете подписаться снова на главной странице.
             </p>
             <Link to="/" className="btn-home">
-              Go to Homepage
+              Перейти на главную
             </Link>
           </div>
         )}
@@ -61,14 +61,14 @@ export default function Unsubscribe() {
         {status === 'error' && (
           <div className="unsubscribe-error">
             <div className="error-icon">✗</div>
-            <h2>Unsubscribe Failed</h2>
+            <h2>Отписка не удалась</h2>
             <p>{message}</p>
             <div className="error-actions">
               <Link to="/" className="btn-home">
-                Go to Homepage
+                Перейти на главную
               </Link>
               <p className="contact-text">
-                If you continue to have problems, please contact us directly.
+                Если проблема продолжается, пожалуйста, свяжитесь с нами напрямую.
               </p>
             </div>
           </div>

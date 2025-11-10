@@ -64,8 +64,11 @@ export async function sendNewRecipeNewsletter(recipe: Recipe): Promise<void> {
           const siteUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
           const recipeUrl = `${siteUrl}/recipe/${recipe.id}`;
           const unsubscribeUrl = `${siteUrl}/unsubscribe/${subscriber.unsubscribeToken}`;
+
+          // Remove /api from BACKEND_URL if present (uploads are served from root, not /api)
+          const backendUrl = (process.env.BACKEND_URL || 'http://localhost:3000').replace(/\/api$/, '');
           const recipeImage = recipe.image
-            ? `${process.env.BACKEND_URL || 'http://localhost:3000'}${recipe.image}`
+            ? `${backendUrl}${recipe.image}`
             : undefined;
 
           const result = await sendEmail({
@@ -128,8 +131,11 @@ export async function sendTestNewsletter(recipe: Recipe, email: string): Promise
     const unsubscribeUrl = subscriber?.unsubscribeToken
       ? `${siteUrl}/unsubscribe/${subscriber.unsubscribeToken}`
       : `${siteUrl}/newsletter/unsubscribe`;
+
+    // Remove /api from BACKEND_URL if present (uploads are served from root, not /api)
+    const backendUrl = (process.env.BACKEND_URL || 'http://localhost:3000').replace(/\/api$/, '');
     const recipeImage = recipe.image
-      ? `${process.env.BACKEND_URL || 'http://localhost:3000'}${recipe.image}`
+      ? `${backendUrl}${recipe.image}`
       : undefined;
 
     await sendEmail({

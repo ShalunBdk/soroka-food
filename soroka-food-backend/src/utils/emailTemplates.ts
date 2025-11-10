@@ -193,7 +193,7 @@ export const builtInTemplates: BuiltInTemplate[] = [
       {{#if recipeImage}}
       <img src="{{recipeImage}}" alt="{{recipeName}}" class="recipe-image">
       {{/if}}
-      <p>{{recipeDescription}}</p>
+      <div>{{{recipeDescription}}}</div>
       <div class="recipe-info">
         <p><strong>⏱️ Время приготовления:</strong> {{cookingTime}} мин</p>
         <p><strong>🍽️ Порций:</strong> {{servings}}</p>
