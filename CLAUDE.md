@@ -47,7 +47,7 @@ JSON fields in recipes: ingredients (with categories/quantities/units), instruct
 
 ## Structure
 
-**Frontend** (`soroka-food-app/src/`): components, pages, pages/admin, hooks (useCategories, useSidebarData), contexts (SettingsContext, ToastContext), services (api.ts), utils (image, sanitize, viewTracker), styles (component-scoped CSS), types
+**Frontend** (`soroka-food-app/src/`): components (RecipePrintView, ImageModal, Breadcrumbs), pages, pages/admin, hooks (useCategories, useSidebarData), contexts (SettingsContext, ToastContext), services (api.ts), utils (image, sanitize, viewTracker), styles (component-scoped CSS), types
 
 **Backend** (`soroka-food-backend/src/`): controllers, routes, middleware (auth, errorHandler, upload, rateLimiter, validation, permissions, cache), validators (Zod), utils (jwt, password, imageProcessor, spamFilter, adminLogger, cacheInvalidation), config (database, redis, logger)
 
@@ -76,6 +76,8 @@ JSON fields in recipes: ingredients (with categories/quantities/units), instruct
 - **Spam Protection**: Honeypot + auto-detection (keywords/URLs/caps/repetition/duplicates) + bulk moderation + configurable filters (SUPER_ADMIN)
 - **Static Pages**: Database-driven, HTML editor, DOMPurify sanitization
 - **Social Sharing**: VK, Telegram, WhatsApp, copy link
+- **Recipe Print**: Optimized A4 layout with QR code for mobile access (hidden on mobile), React Portal-based rendering, includes main image, scaled ingredients, step images, nutrition, and tips
+- **QR Codes**: In-page QR code in share section (desktop only), print-version QR code for phone access
 
 ### User Management & RBAC
 
@@ -139,6 +141,24 @@ JSON fields in recipes: ingredients (with categories/quantities/units), instruct
 **Env**: `EMAIL_ENCRYPTION_KEY`, `FRONTEND_URL`, `BACKEND_URL`
 
 **Files**: Backend: `utils/{emailService,emailTemplates,newsletterQueue}.ts`, controllers: `{smtp,emailTemplate,emailLog,newsletter}Controller.ts` | Frontend: `pages/admin/{AdminSmtpSettings,AdminEmailLogs}.tsx`, `pages/{VerifyEmail,Unsubscribe}.tsx`
+
+### Recipe Print System
+
+**Features**:
+1. **Print Button**: Located in share section, triggers `window.print()` with optimized layout
+2. **A4 Optimized Layout**: Compact typography (10-11pt), optimized margins (12-15mm), page break control
+3. **QR Codes**:
+   - In-page QR in share section (desktop only, hidden on mobile ≤768px)
+   - Print-version QR for mobile access (100px, right-aligned)
+4. **Content**: Recipe title, description, info (servings/times), main image (max 100mm), grouped ingredients with scaling, step-by-step instructions with images (max 60×50mm each), nutrition facts, tips
+5. **React Portal**: Print view rendered to `document.body` to avoid content interference
+6. **Print-Only CSS**: `@media print` hides `#root`, shows only `.recipe-print-view`, optimized spacing
+
+**Implementation**: `RecipePrintView.tsx` uses `createPortal()`, receives `recipe` and `currentServings` props, scales ingredients automatically, renders HTML content with `dangerouslySetInnerHTML`, integrates `react-qr-code` (size 100, level M)
+
+**Dependencies**: `react-qr-code` library for QR generation
+
+**Files**: Frontend: `components/RecipePrintView/{RecipePrintView.tsx,.css}`, `pages/RecipeDetail.tsx`, `styles/RecipeDetail.css`
 
 ## Performance
 
