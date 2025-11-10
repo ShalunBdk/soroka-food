@@ -89,9 +89,30 @@ export const createComment = async (req: Request, res: Response): Promise<void> 
 function formatDate(date: Date): string {
   const now = new Date();
   const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return 'Сегодня';
+  // Calculate time differences
+  const diffMinutes = Math.floor(diffTime / (1000 * 60));
+  const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  // Less than 1 minute
+  if (diffMinutes < 1) return 'Только что';
+
+  // Less than 1 hour
+  if (diffMinutes < 60) {
+    if (diffMinutes === 1) return '1 минуту назад';
+    if (diffMinutes < 5) return `${diffMinutes} минуты назад`;
+    return `${diffMinutes} минут назад`;
+  }
+
+  // Less than 24 hours
+  if (diffHours < 24) {
+    if (diffHours === 1) return '1 час назад';
+    if (diffHours < 5) return `${diffHours} часа назад`;
+    return `${diffHours} часов назад`;
+  }
+
+  // Days
   if (diffDays === 1) return 'Вчера';
   if (diffDays === 2) return '2 дня назад';
   if (diffDays < 7) return `${diffDays} дней назад`;
