@@ -50,6 +50,17 @@
   margin-bottom: 2rem;
 }
 
+.share-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.share-left {
+  flex: 1;
+}
+
 .share-title {
   font-weight: 600;
   margin-bottom: 0.8rem;
@@ -59,6 +70,23 @@
   display: flex;
   gap: 0.8rem;
   flex-wrap: wrap;
+}
+
+.share-qr {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hide QR code on mobile devices */
+@media (max-width: 768px) {
+  .share-qr {
+    display: none;
+  }
+
+  .share-content {
+    display: block;
+  }
 }
 
 .share-btn {
@@ -480,5 +508,27 @@
 
   .tabs {
     overflow-x: auto;
+  }
+}
+
+/* Print button styles */
+.share-btn.print-btn {
+  background: #8b4513;
+  color: white;
+  border-color: #8b4513;
+}
+
+.share-btn.print-btn:hover {
+  background: #6f3610;
+  border-color: #6f3610;
+}
+
+/* Hide elements during printing */
+@media print {
+  .share-section,
+  .share-btn,
+  .print-btn,
+  .share-qr {
+    display: none !important;
   }
 }

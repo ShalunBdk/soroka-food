@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import QRCode from 'react-qr-code';
 import Breadcrumbs from '../components/Breadcrumbs/Breadcrumbs';
 import ImageModal from '../components/ImageModal/ImageModal';
+import RecipePrintView from '../components/RecipePrintView/RecipePrintView';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { getImageUrl } from '../utils/image';
@@ -239,6 +241,10 @@ const RecipeDetail: React.FC = () => {
     }
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   // Image modal handlers
   const handleImageClick = (imageUrl: string, altText: string) => {
     setModalImageUrl(imageUrl);
@@ -297,12 +303,24 @@ const RecipeDetail: React.FC = () => {
           <div className="recipe-description" dangerouslySetInnerHTML={{ __html: recipe.description }} />
 
           <div className="share-section">
-            <div className="share-title">Поделиться рецептом:</div>
-            <div className="share-buttons">
-              <button className="share-btn" onClick={handleShareVK}>ВКонтакте</button>
-              <button className="share-btn" onClick={handleShareTelegram}>Telegram</button>
-              <button className="share-btn" onClick={handleShareWhatsApp}>WhatsApp</button>
-              <button className="share-btn" onClick={handleCopyLink}>Копировать ссылку</button>
+            <div className="share-content">
+              <div className="share-left">
+                <div className="share-title">Поделиться рецептом:</div>
+                <div className="share-buttons">
+                  <button className="share-btn" onClick={handleShareVK}>ВКонтакте</button>
+                  <button className="share-btn" onClick={handleShareTelegram}>Telegram</button>
+                  <button className="share-btn" onClick={handleShareWhatsApp}>WhatsApp</button>
+                  <button className="share-btn" onClick={handleCopyLink}>Копировать ссылку</button>
+                  <button className="share-btn print-btn" onClick={handlePrint}>🖨️ Распечатать</button>
+                </div>
+              </div>
+              <div className="share-qr">
+                <QRCode
+                  value={window.location.href}
+                  size={100}
+                  level="M"
+                />
+              </div>
             </div>
           </div>
 
@@ -610,6 +628,11 @@ const RecipeDetail: React.FC = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
       />
+
+      {/* Print View (hidden on screen, visible when printing) */}
+      {recipe && (
+        <RecipePrintView recipe={recipe} currentServings={currentServings} />
+      )}
     </>
   );
 };
