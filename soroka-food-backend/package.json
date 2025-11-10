@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "ts-node-dev src/prisma/seed.ts"
+    "prisma:seed": "ts-node-dev src/prisma/seed.ts",
+    "update:email-template": "ts-node-dev src/scripts/updateNewRecipeTemplate.ts"
   },
   "keywords": [
     "api",
