@@ -3,7 +3,8 @@ export interface Recipe {
   title: string;
   description: string;
   image: string;
-  cookingTime: number; // in minutes
+  prepTime?: number; // preparation time in minutes (optional)
+  cookingTime: number; // cooking time in minutes
   calories: number;
   servings: number;
   author: string;
@@ -24,7 +25,10 @@ export interface RecipeDetail extends Recipe {
 
 export interface Ingredient {
   name: string;
-  amount: string;
+  amount: string; // Full amount string (for backward compatibility and display)
+  quantity?: number; // Numeric quantity for auto-scaling
+  unit?: string; // Unit of measurement (г, кг, мл, л, шт, ст.л., ч.л., стакан, etc.)
+  category?: string; // Optional category for grouping (e.g., "Для соуса", "Для основного блюда")
 }
 
 export interface InstructionStep {

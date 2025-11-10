@@ -2,7 +2,10 @@ import { z } from 'zod';
 
 const ingredientSchema = z.object({
   name: z.string().min(1, 'Ingredient name is required'),
-  amount: z.string().min(1, 'Ingredient amount is required')
+  amount: z.string().min(1, 'Ingredient amount is required'),
+  quantity: z.number().positive().optional(), // Optional numeric quantity for auto-scaling
+  unit: z.string().optional(), // Optional unit of measurement
+  category: z.string().optional() // Optional category for grouping ingredients
 });
 
 const instructionStepSchema = z.object({
@@ -26,6 +29,11 @@ export const createRecipeSchema = z.object({
     description: z.string()
       .min(10, 'Description must be at least 10 characters')
       .max(1000, 'Description must not exceed 1000 characters'),
+    prepTime: z.number()
+      .int('Preparation time must be an integer')
+      .positive('Preparation time must be positive')
+      .max(1440, 'Preparation time must not exceed 24 hours')
+      .optional(),
     cookingTime: z.number()
       .int('Cooking time must be an integer')
       .positive('Cooking time must be positive')
@@ -59,6 +67,11 @@ export const updateRecipeSchema = z.object({
     description: z.string()
       .min(10, 'Description must be at least 10 characters')
       .max(1000, 'Description must not exceed 1000 characters')
+      .optional(),
+    prepTime: z.number()
+      .int('Preparation time must be an integer')
+      .positive('Preparation time must be positive')
+      .max(1440, 'Preparation time must not exceed 24 hours')
       .optional(),
     cookingTime: z.number()
       .int('Cooking time must be an integer')

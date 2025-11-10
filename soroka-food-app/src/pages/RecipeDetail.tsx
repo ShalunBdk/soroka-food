@@ -6,6 +6,7 @@ import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { getImageUrl } from '../utils/image';
 import { shouldCountView } from '../utils/viewTracker';
+import { formatTime } from '../utils/time';
 import { useSettings } from '../contexts/SettingsContext';
 import type { RecipeDetail as RecipeDetailType, Comment } from '../types';
 import '../styles/RecipeDetail.css';
@@ -37,6 +38,9 @@ const RecipeDetail: React.FC = () => {
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [modalImageAlt, setModalImageAlt] = useState('');
 
+  // Servings adjustment state
+  const [currentServings, setCurrentServings] = useState<number>(0);
+
   // Fetch recipe details and comments
   useEffect(() => {
     const fetchData = async () => {
@@ -50,6 +54,7 @@ const RecipeDetail: React.FC = () => {
         ]);
 
         setRecipe(recipeData);
+        setCurrentServings(recipeData.servings); // Initialize servings
         setRecipeComments(commentsResponse.data);
         setCommentsPagination(commentsResponse.pagination);
         setRelatedRecipes(recipesData.data.filter((r: any) => r.id !== recipeId));
@@ -245,6 +250,13 @@ const RecipeDetail: React.FC = () => {
     setIsModalOpen(false);
   };
 
+  // Adjust servings
+  const adjustServings = (delta: number) => {
+    if (!recipe) return;
+    const newServings = Math.max(1, currentServings + delta);
+    setCurrentServings(newServings);
+  };
+
   return (
     <>
       <Breadcrumbs items={breadcrumbItems} />
@@ -298,14 +310,44 @@ const RecipeDetail: React.FC = () => {
             <div className="info-grid">
               <div className="info-item">
                 <span className="info-label">Порций</span>
-                <span className="info-value">{recipe.servings}</span>
+                <div className="servings-controls">
+                  <button
+                    onClick={() => adjustServings(-1)}
+                    className="servings-btn"
+                    disabled={currentServings <= 1}
+                    title="Уменьшить количество порций"
+                  >
+                    −
+                  </button>
+                  <span className="info-value">{currentServings}</span>
+                  <button
+                    onClick={() => adjustServings(1)}
+                    className="servings-btn"
+                    title="Увеличить количество порций"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
               <div className="info-item">
-                <span className="info-label">Время приготовления</span>
-                <span className="info-value">{recipe.cookingTime} мин</span>
+                {recipe.prepTime ? (
+                  <>
+                    <span className="info-label">Общее время</span>
+                    <span className="info-value">{formatTime(recipe.prepTime + recipe.cookingTime)}</span>
+                    <div style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.3rem' }}>
+                      Подготовка: {formatTime(recipe.prepTime)}<br />
+                      Приготовление: {formatTime(recipe.cookingTime)}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span className="info-label">Время приготовления</span>
+                    <span className="info-value">{formatTime(recipe.cookingTime)}</span>
+                  </>
+                )}
               </div>
               <div className="info-item">
-                <span className="info-label">Калорийность</span>
+                <span className="info-label">Калорийность (на 100г)</span>
                 <span className="info-value">{recipe.calories} ккал</span>
               </div>
             </div>
@@ -313,13 +355,60 @@ const RecipeDetail: React.FC = () => {
 
           <div>
             <h2 className="section-title">Ингредиенты</h2>
-            <ul className="ingredients-list">
-              {recipe.ingredients.map((ingredient, index) => (
-                <li key={index}>
-                  {ingredient.amount} {ingredient.name}
-                </li>
-              ))}
-            </ul>
+            {(() => {
+              // Group ingredients by category
+              const grouped = recipe.ingredients.reduce((acc, ingredient) => {
+                const category = ingredient.category?.trim() || '';
+                if (!acc[category]) {
+                  acc[category] = [];
+                }
+                acc[category].push(ingredient);
+                return acc;
+              }, {} as Record<string, typeof recipe.ingredients>);
+
+              // Get categories, putting empty category first
+              const categories = Object.keys(grouped).sort((a, b) => {
+                if (a === '') return -1;
+                if (b === '') return 1;
+                return 0;
+              });
+
+              return categories.map((category, catIndex) => (
+                <div key={catIndex} style={{ marginBottom: category ? '1.5rem' : '0' }}>
+                  {category && (
+                    <h3 style={{
+                      fontSize: '1.1rem',
+                      fontWeight: '600',
+                      marginTop: catIndex > 0 ? '1.5rem' : '0',
+                      marginBottom: '0.75rem',
+                      color: '#333'
+                    }}>
+                      {category}
+                    </h3>
+                  )}
+                  <ul className="ingredients-list">
+                    {grouped[category].map((ingredient, index) => (
+                      <li key={index}>
+                        {ingredient.quantity && ingredient.unit ? (
+                          <>
+                            {ingredient.name} —{' '}
+                            {currentServings !== recipe.servings ? (
+                              <>
+                                {(ingredient.quantity * (currentServings / recipe.servings)).toFixed(1).replace(/\.0$/, '')} {ingredient.unit}
+                              </>
+                            ) : (
+                              `${ingredient.quantity} ${ingredient.unit}`
+                            )}
+                          </>
+                        ) : (
+                          `${ingredient.name} — ${ingredient.amount}`
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ));
+            })()}
           </div>
 
           <div>

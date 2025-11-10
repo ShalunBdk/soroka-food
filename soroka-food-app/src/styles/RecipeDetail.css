@@ -114,6 +114,46 @@
   color: #8b4513;
 }
 
+/* Servings adjustment buttons */
+.servings-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.servings-btn {
+  padding: 0.3rem 0.7rem;
+  background: white;
+  color: #555;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: bold;
+  transition: all 0.3s;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.servings-btn:hover {
+  background: #8b4513;
+  color: white;
+  border-color: #8b4513;
+}
+
+.servings-btn:active {
+  transform: scale(0.95);
+}
+
+.servings-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .section-title {
   font-size: 1.5rem;
   color: #333;

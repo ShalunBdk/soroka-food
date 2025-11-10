@@ -8,7 +8,7 @@ export default defineConfig({
   // Build configuration for production
   build: {
     target: 'es2015', // Browser compatibility target
-    minify: 'terser', // Use terser for better minification
+    minify: 'esbuild', // Use esbuild for fast minification (default)
     sourcemap: false, // Disable sourcemaps in production for security
 
     // Chunk splitting for better caching

@@ -71,7 +71,8 @@ model Recipe {
   title       String
   description String
   image       String?  // URL to main recipe image
-  cookingTime Int      // in minutes
+  prepTime    Int?     // preparation time in minutes (optional)
+  cookingTime Int      // cooking time in minutes
   calories    Int
   servings    Int
   author      String   @default("Soroka")

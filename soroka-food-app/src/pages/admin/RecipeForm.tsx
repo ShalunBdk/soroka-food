@@ -9,6 +9,26 @@ import { getImageUrl } from '../../utils/image';
 import type { Ingredient, InstructionStep } from '../../types';
 import './RecipeForm.css';
 
+// Helper type for grouping ingredients by category in the form
+interface IngredientGroup {
+  category: string; // Empty string for ingredients without category
+  ingredients: Ingredient[];
+}
+
+// Common measurement units
+const MEASUREMENT_UNITS = [
+  'г',
+  'кг',
+  'мл',
+  'л',
+  'шт',
+  'ст.л.',
+  'ч.л.',
+  'стакан',
+  'щепотка',
+  'по вкусу'
+] as const;
+
 function RecipeForm() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -28,13 +48,14 @@ function RecipeForm() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState('');
+  const [prepTime, setPrepTime] = useState<number | undefined>(undefined);
   const [cookingTime, setCookingTime] = useState(30);
   const [servings, setServings] = useState(4);
   const [calories, setCalories] = useState(200);
   const [tags, setTags] = useState<string[]>([]);
 
-  const [ingredients, setIngredients] = useState<Ingredient[]>([
-    { name: '', amount: '' }
+  const [ingredientGroups, setIngredientGroups] = useState<IngredientGroup[]>([
+    { category: '', ingredients: [{ name: '', amount: '', quantity: undefined, unit: 'г' }] }
   ]);
 
   const [instructions, setInstructions] = useState<InstructionStep[]>([
@@ -43,9 +64,9 @@ function RecipeForm() {
 
   const [tips, setTips] = useState<string[]>(['']);
 
-  const [protein, setProtein] = useState(20);
-  const [fat, setFat] = useState(10);
-  const [carbs, setCarbs] = useState(25);
+  const [protein, setProtein] = useState<string>('20');
+  const [fat, setFat] = useState<string>('10');
+  const [carbs, setCarbs] = useState<string>('25');
 
   // Fetch categories, tags, and recipe data
   useEffect(() => {
@@ -73,16 +94,55 @@ function RecipeForm() {
           setTitle(recipeData.title || '');
           setDescription(recipeData.description || '');
           setImage(recipeData.image || '');
+          setPrepTime(recipeData.prepTime);
           setCookingTime(recipeData.cookingTime || 30);
           setServings(recipeData.servings || 4);
           setCalories(recipeData.calories || 200);
           setTags(recipeData.tags || []);
-          setIngredients(recipeData.ingredients || [{ name: '', amount: '' }]);
+          // Group ingredients by category
+          if (recipeData.ingredients && recipeData.ingredients.length > 0) {
+            const grouped: { [key: string]: Ingredient[] } = {};
+            recipeData.ingredients.forEach((ing: Ingredient) => {
+              const cat = ing.category || '';
+              if (!grouped[cat]) {
+                grouped[cat] = [];
+              }
+
+              // Parse quantity and unit from amount if not provided
+              let quantity = ing.quantity;
+              let unit = ing.unit || 'г';
+
+              if (!quantity && ing.amount) {
+                // Try to parse amount like "200 г" or "3 шт"
+                const match = ing.amount.match(/^(\d+(?:[.,]\d+)?)\s*(.*)$/);
+                if (match) {
+                  quantity = parseFloat(match[1].replace(',', '.'));
+                  unit = match[2] || 'г';
+                }
+              }
+
+              grouped[cat].push({
+                name: ing.name,
+                amount: ing.amount,
+                quantity,
+                unit
+              });
+            });
+
+            const groups: IngredientGroup[] = Object.keys(grouped).map(cat => ({
+              category: cat,
+              ingredients: grouped[cat]
+            }));
+
+            setIngredientGroups(groups);
+          } else {
+            setIngredientGroups([{ category: '', ingredients: [{ name: '', amount: '', quantity: undefined, unit: 'г' }] }]);
+          }
           setInstructions(recipeData.instructions || [{ stepNumber: 1, text: '', images: [] }]);
           setTips(recipeData.tips || ['']);
-          setProtein(recipeData.nutrition?.protein || 20);
-          setFat(recipeData.nutrition?.fat || 10);
-          setCarbs(recipeData.nutrition?.carbs || 25);
+          setProtein(String(recipeData.nutrition?.protein || 20));
+          setFat(String(recipeData.nutrition?.fat || 10));
+          setCarbs(String(recipeData.nutrition?.carbs || 25));
 
           // Set selected category IDs
           if (recipeData.categories && Array.isArray(recipeData.categories)) {
@@ -100,18 +160,61 @@ function RecipeForm() {
     fetchData();
   }, [id, isEdit]);
 
-  const handleAddIngredient = () => {
-    setIngredients([...ingredients, { name: '', amount: '' }]);
+  // Add new ingredient group (category)
+  const handleAddIngredientGroup = () => {
+    setIngredientGroups([...ingredientGroups, { category: '', ingredients: [{ name: '', amount: '' }] }]);
   };
 
-  const handleRemoveIngredient = (index: number) => {
-    setIngredients(ingredients.filter((_, i) => i !== index));
+  // Remove ingredient group
+  const handleRemoveIngredientGroup = (groupIndex: number) => {
+    setIngredientGroups(ingredientGroups.filter((_, i) => i !== groupIndex));
   };
 
-  const handleIngredientChange = (index: number, field: 'name' | 'amount', value: string) => {
-    const updated = [...ingredients];
-    updated[index][field] = value;
-    setIngredients(updated);
+  // Update group category name
+  const handleGroupCategoryChange = (groupIndex: number, value: string) => {
+    const updated = [...ingredientGroups];
+    updated[groupIndex].category = value;
+    setIngredientGroups(updated);
+  };
+
+  // Add ingredient to specific group
+  const handleAddIngredientToGroup = (groupIndex: number) => {
+    const updated = [...ingredientGroups];
+    updated[groupIndex].ingredients.push({ name: '', amount: '', quantity: undefined, unit: 'г' });
+    setIngredientGroups(updated);
+  };
+
+  // Remove ingredient from group
+  const handleRemoveIngredientFromGroup = (groupIndex: number, ingredientIndex: number) => {
+    const updated = [...ingredientGroups];
+    updated[groupIndex].ingredients = updated[groupIndex].ingredients.filter((_, i) => i !== ingredientIndex);
+    setIngredientGroups(updated);
+  };
+
+  // Update ingredient in group
+  const handleIngredientChange = (groupIndex: number, ingredientIndex: number, field: 'name' | 'amount' | 'quantity' | 'unit', value: string | number) => {
+    const updated = [...ingredientGroups];
+    const ingredient = updated[groupIndex].ingredients[ingredientIndex];
+
+    if (field === 'name') {
+      ingredient.name = value as string;
+    } else if (field === 'quantity') {
+      ingredient.quantity = value ? Number(value) : undefined;
+      // Auto-update amount when quantity changes
+      if (ingredient.quantity && ingredient.unit) {
+        ingredient.amount = `${ingredient.quantity} ${ingredient.unit}`;
+      }
+    } else if (field === 'unit') {
+      ingredient.unit = value as string;
+      // Auto-update amount when unit changes
+      if (ingredient.quantity && ingredient.unit) {
+        ingredient.amount = `${ingredient.quantity} ${ingredient.unit}`;
+      }
+    } else if (field === 'amount') {
+      ingredient.amount = value as string;
+    }
+
+    setIngredientGroups(updated);
   };
 
   const handleAddInstruction = () => {
@@ -305,22 +408,47 @@ function RecipeForm() {
 
     setLoading(true);
     try {
+      // Convert ingredient groups back to flat array with category field
+      const flatIngredients: Ingredient[] = [];
+      ingredientGroups.forEach(group => {
+        group.ingredients.forEach(ing => {
+          if (ing.name) {
+            // Ensure amount is populated from quantity and unit
+            const amount = ing.quantity && ing.unit ? `${ing.quantity} ${ing.unit}` : ing.amount;
+
+            flatIngredients.push({
+              name: ing.name,
+              amount: amount,
+              quantity: ing.quantity,
+              unit: ing.unit,
+              category: group.category || undefined
+            });
+          }
+        });
+      });
+
       const recipeData = {
         title,
         description,
         image,
+        prepTime: prepTime || undefined,
         cookingTime,
         servings,
         calories,
         author: 'Soroka',
         tags,
-        ingredients: ingredients.filter(ing => ing.name && ing.amount),
+        ingredients: flatIngredients,
         instructions: instructions.filter(inst => inst.text).map((inst, i) => ({
           ...inst,
           stepNumber: i + 1
         })),
         tips: tips.filter(tip => tip),
-        nutrition: { calories, protein, fat, carbs },
+        nutrition: {
+          calories,
+          protein: parseFloat(protein) || 0,
+          fat: parseFloat(fat) || 0,
+          carbs: parseFloat(carbs) || 0
+        },
         categories: selectedCategoryIds.filter(id => id != null && typeof id === 'number'),
         status
       };
@@ -416,6 +544,17 @@ function RecipeForm() {
                   </button>
                 </div>
               )}
+            </div>
+
+            <div className="form-field">
+              <label>Время подготовки (мин)</label>
+              <input
+                type="number"
+                value={prepTime || ''}
+                onChange={(e) => setPrepTime(e.target.value ? Number(e.target.value) : undefined)}
+                min="0"
+                placeholder="Опционально"
+              />
             </div>
 
             <div className="form-field">
@@ -712,27 +851,101 @@ function RecipeForm() {
 
         <div className="form-section">
           <h3>Ингредиенты</h3>
-          {ingredients.map((ingredient, index) => (
-            <div key={index} className="dynamic-field">
-              <input
-                type="text"
-                placeholder="Название ингредиента"
-                value={ingredient.name}
-                onChange={(e) => handleIngredientChange(index, 'name', e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="Количество"
-                value={ingredient.amount}
-                onChange={(e) => handleIngredientChange(index, 'amount', e.target.value)}
-              />
-              <button type="button" onClick={() => handleRemoveIngredient(index)} className="btn-remove">
-                Удалить
-              </button>
+          {ingredientGroups.map((group, groupIndex) => (
+            <div key={groupIndex} style={{
+              marginBottom: '2rem',
+              padding: '1rem',
+              background: '#f9f9f9',
+              borderRadius: '8px',
+              border: '1px solid #e0e0e0'
+            }}>
+              {/* Category name */}
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#333' }}>
+                  {groupIndex === 0 && !group.category ? 'Основные ингредиенты' : 'Категория ингредиентов'}
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    placeholder="Например: Для соуса, Для теста (оставьте пустым для основных)"
+                    value={group.category}
+                    onChange={(e) => handleGroupCategoryChange(groupIndex, e.target.value)}
+                    style={{
+                      flex: 1,
+                      padding: '0.6rem',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '0.95rem'
+                    }}
+                  />
+                  {ingredientGroups.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveIngredientGroup(groupIndex)}
+                      className="btn-remove"
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      Удалить группу
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Ingredients in this group */}
+              <div style={{ marginLeft: '1rem' }}>
+                {group.ingredients.map((ingredient, ingIndex) => (
+                  <div key={ingIndex} style={{ marginBottom: '0.75rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.2fr auto', gap: '0.5rem', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        placeholder="Название ингредиента"
+                        value={ingredient.name}
+                        onChange={(e) => handleIngredientChange(groupIndex, ingIndex, 'name', e.target.value)}
+                        style={{ padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                      />
+                      <input
+                        type="number"
+                        placeholder="Кол-во"
+                        step="0.1"
+                        min="0"
+                        value={ingredient.quantity || ''}
+                        onChange={(e) => handleIngredientChange(groupIndex, ingIndex, 'quantity', e.target.value)}
+                        style={{ padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                      />
+                      <select
+                        value={ingredient.unit || 'г'}
+                        onChange={(e) => handleIngredientChange(groupIndex, ingIndex, 'unit', e.target.value)}
+                        style={{ padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                      >
+                        {MEASUREMENT_UNITS.map(unit => (
+                          <option key={unit} value={unit}>{unit}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveIngredientFromGroup(groupIndex, ingIndex)}
+                        className="btn-remove"
+                        disabled={group.ingredients.length === 1}
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => handleAddIngredientToGroup(groupIndex)}
+                  className="btn-add"
+                  style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}
+                >
+                  + Добавить ингредиент в эту группу
+                </button>
+              </div>
             </div>
           ))}
-          <button type="button" onClick={handleAddIngredient} className="btn-add">
-            + Добавить ингредиент
+
+          <button type="button" onClick={handleAddIngredientGroup} className="btn-add" style={{ marginTop: '1rem' }}>
+            + Добавить группу ингредиентов (категорию)
           </button>
         </div>
 
@@ -810,28 +1023,49 @@ function RecipeForm() {
             <div className="form-field">
               <label>Белки (г)</label>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={protein}
-                onChange={(e) => setProtein(Number(e.target.value))}
-                min="0"
+                onChange={(e) => {
+                  const value = e.target.value.replace(',', '.');
+                  // Allow only numbers, dots, and empty string
+                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                    setProtein(value);
+                  }
+                }}
+                placeholder="0"
               />
             </div>
             <div className="form-field">
               <label>Жиры (г)</label>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={fat}
-                onChange={(e) => setFat(Number(e.target.value))}
-                min="0"
+                onChange={(e) => {
+                  const value = e.target.value.replace(',', '.');
+                  // Allow only numbers, dots, and empty string
+                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                    setFat(value);
+                  }
+                }}
+                placeholder="0"
               />
             </div>
             <div className="form-field">
               <label>Углеводы (г)</label>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={carbs}
-                onChange={(e) => setCarbs(Number(e.target.value))}
-                min="0"
+                onChange={(e) => {
+                  const value = e.target.value.replace(',', '.');
+                  // Allow only numbers, dots, and empty string
+                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                    setCarbs(value);
+                  }
+                }}
+                placeholder="0"
               />
             </div>
           </div>

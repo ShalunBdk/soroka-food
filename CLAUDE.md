@@ -27,7 +27,7 @@ This file provides guidance to Claude Code when working with this repository.
 ## Architecture
 
 ### Database Schema (14 tables)
-`users` (roles: SUPER_ADMIN/ADMIN/MODERATOR, active status), `categories`, `recipes` (with JSON: ingredients, instructions, nutrition, tips), `recipe_categories`, `comments` (moderation: APPROVED/PENDING/SPAM), `newsletter_subscribers` (verified, verificationToken, unsubscribeToken), `site_settings`, `static_pages`, `spam_filter_settings` (configurable anti-spam rules), `admin_logs` (audit trail for all admin/moderator actions), `smtp_settings` (encrypted email server config), `email_templates` (customizable templates with Handlebars), `email_logs` (send history with status tracking)
+`users` (roles: SUPER_ADMIN/ADMIN/MODERATOR, active status), `categories`, `recipes` (with JSON: ingredients with categories/quantities/units, instructions, nutrition, tips; prepTime field for preparation time), `recipe_categories`, `comments` (moderation: APPROVED/PENDING/SPAM), `newsletter_subscribers` (verified, verificationToken, unsubscribeToken), `site_settings`, `static_pages`, `spam_filter_settings` (configurable anti-spam rules), `admin_logs` (audit trail for all admin/moderator actions), `smtp_settings` (encrypted email server config), `email_templates` (customizable templates with Handlebars), `email_logs` (send history with status tracking)
 
 ### Key Routes
 
@@ -58,8 +58,8 @@ This file provides guidance to Claude Code when working with this repository.
 **Location**: `soroka-food-backend/.env`
 
 **TypeScript types** (`soroka-food-app/src/types/index.ts`) match Prisma schema
-**Key types**: Recipe, RecipeDetail, Ingredient, InstructionStep, Nutrition, Comment, Category, User, SiteSettings, StaticPage, AdminLog, AdminLogsResponse, AdminLogsStats
-**Prisma JSON fields**: ingredients, instructions, nutrition, tips (stored as JSON in PostgreSQL), details (in admin_logs - stores action-specific data)
+**Key types**: Recipe, RecipeDetail, Ingredient (with name, amount, quantity, unit, category), InstructionStep, Nutrition, Comment, Category, User, SiteSettings, StaticPage, AdminLog, AdminLogsResponse, AdminLogsStats
+**Prisma JSON fields**: ingredients (with optional category grouping, quantity/unit for auto-scaling), instructions, nutrition, tips (stored as JSON in PostgreSQL), details (in admin_logs - stores action-specific data)
 
 ## Project Structure
 
@@ -93,7 +93,20 @@ soroka-food-backend/src/
 
 ### Recipe Form (`RecipeForm.tsx`)
 - Create (`/admin/recipes/new`) vs Edit mode (`/admin/recipes/:id/edit`)
-- Dynamic ingredient/instruction management, file upload with preview
+- **Ingredient Management**:
+  - Group-based interface with optional categories (e.g., "Для соуса", "Для теста")
+  - Measurement units dropdown: г, кг, мл, л, шт, ст.л., ч.л., стакан, щепотка, по вкусу
+  - Quantity field (numeric) for automatic portion scaling
+  - Auto-generates `amount` string from quantity + unit
+- **Time Management**:
+  - Preparation time (prepTime) - optional field in minutes
+  - Cooking time (cookingTime) - required field in minutes
+  - Display formatted as hours/minutes (e.g., "1 ч 30 мин" for 90 minutes)
+- **Nutrition Fields**:
+  - Support for decimal input with both comma and dot separators
+  - Stored as string during editing, converted to number on submit
+  - Validation: only allows digits and one decimal point
+- Dynamic instruction management, file upload with preview
 - Category management: select existing or create new (auto-slug generation, Russian-to-Latin transliteration)
 - Tag management: auto-load existing tags, create on-the-fly, visual chips
 - Supports DRAFT/PUBLISHED status
@@ -114,6 +127,15 @@ soroka-food-backend/src/
 ### Features
 - **Search**: Case-insensitive across title/description/tags, supports pagination
 - **Filtering**: `?sort=newest|popular|photo`, by category
+- **Portion Scaling** (RecipeDetail.tsx):
+  - +/- buttons to adjust serving size dynamically
+  - Automatic ingredient quantity recalculation based on new portion count
+  - Only scales ingredients with numeric quantity and unit (preserves text-based amounts like "по вкусу")
+  - Formula: `newQuantity = originalQuantity * (currentServings / originalServings)`
+- **Time Display** (utils/time.ts):
+  - formatTime() utility converts minutes to human-readable format
+  - Examples: 30 → "30 мин", 60 → "1 ч", 90 → "1 ч 30 мин", 125 → "2 ч 5 мин"
+  - Shows "Общее время" with breakdown when both prepTime and cookingTime present
 - **Comments**:
   - Submit → Auto spam check → PENDING/SPAM → Admin moderates (APPROVED/PENDING/SPAM) → Display APPROVED only
   - **Pagination**: `GET /api/comments/recipe/:id?page=1&limit=20` (max 100 per page), "Load More" button shows remaining count
@@ -668,6 +690,7 @@ frontend:
 **Custom Hooks**: `useCategories()`, `useSidebarData()`, `useSettings()`
 
 **Recent Enhancements**:
+- **2025-01-10**: Recipe UX Improvements - Ingredient categorization with group-based UI (e.g., "Для соуса", "Для теста"), measurement units system (10 units: г, кг, мл, л, шт, ст.л., ч.л., стакан, щепотка, по вкусу), automatic portion scaling with +/- buttons and real-time recalculation, preparation time field (optional, separate from cooking time), time formatting utility (90 мин → 1 ч 30 мин), decimal input support with comma/dot for nutrition fields, improved ingredient display order (name first, then quantity/unit)
 - **2025-01-06**: Image System Optimization - Migrated to WebP-only image format (saves 50% disk space, 97%+ browser support, 25-35% smaller than JPEG), automatic conversion with Sharp (main 1200px + thumbnail 300px, effort 4), original files deleted after processing, simplified imageProcessor.ts with 2 functions (convertToWebP, createWebPThumbnail), backward-compatible API (url/thumbnail response), HTTP caching for static files (uploads 1 year immutable), comments pagination (20 per page with "Load More")
 - **2025-01-05**: Performance Optimization - Database indexes (Recipe, Comment, RecipeCategory for faster queries), Redis caching system (5-30 min TTL on public endpoints with auto-invalidation), graceful fallback when Redis unavailable, smart cache invalidation on CRUD operations
 - **2025-01-26**: SettingsContext for performance (1 API call per session vs 8+ per navigation), Dynamic site branding (logo + name from settings, Montserrat typography), Production deployment setup (single-server architecture on :3000), Security features (Helmet, CORS, Rate Limiting, Zod validation, Sharp image validation, DOMPurify XSS protection)
