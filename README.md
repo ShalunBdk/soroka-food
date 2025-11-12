@@ -15,7 +15,7 @@
 
 </div>
 
-<a href="https://www.soroka-demo.shbdk.ru"><img src="https://raw.githubusercontent.com/shalunbdk/soroka-food/main/soroka-food-app/public/soroka-food.png" alt="soroka-demo.shbdk.ru" /></a>
+<a href="https://soroka-demo.shbdk.ru"><img src="https://raw.githubusercontent.com/shalunbdk/soroka-food/main/soroka-food-app/public/soroka-food.png" alt="soroka-demo.shbdk.ru" /></a>
 <a href="https://soroka-demo.shbdk.ru/admin"><img src="https://raw.githubusercontent.com/shalunbdk/soroka-food/main/soroka-food-app/public/soroka-food-admin.png" alt="soroka-demo.shbdk.ru/admin" /></a>
 
 ---
