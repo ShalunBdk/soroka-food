@@ -6,14 +6,14 @@ import path from 'path';
  * @param inputPath - Path to the source image (JPEG, PNG, etc.)
  * @param outputPath - Path where WebP image will be saved (should end with .webp)
  * @param maxWidth - Maximum width in pixels (default: 1200)
- * @param quality - WebP quality 0-100 (default: 85)
+ * @param quality - WebP quality 0-100 (default: 80)
  * @returns Path to the optimized WebP image
  */
 export const convertToWebP = async (
   inputPath: string,
   outputPath: string,
   maxWidth: number = 1200,
-  quality: number = 85
+  quality: number = 80
 ): Promise<string> => {
   await sharp(inputPath)
     .rotate() // Auto-rotate based on EXIF orientation
@@ -31,15 +31,15 @@ export const convertToWebP = async (
  * Creates a WebP thumbnail from an image
  * @param inputPath - Path to the source image
  * @param outputPath - Path where WebP thumbnail will be saved
- * @param thumbnailWidth - Width of thumbnail in pixels (default: 300)
- * @param quality - WebP quality 0-100 (default: 80)
+ * @param thumbnailWidth - Width of thumbnail in pixels (default: 600)
+ * @param quality - WebP quality 0-100 (default: 75)
  * @returns Path to the WebP thumbnail
  */
 export const createWebPThumbnail = async (
   inputPath: string,
   outputPath: string,
-  thumbnailWidth: number = 300,
-  quality: number = 80
+  thumbnailWidth: number = 600,
+  quality: number = 75
 ): Promise<string> => {
   await sharp(inputPath)
     .rotate() // Auto-rotate based on EXIF orientation

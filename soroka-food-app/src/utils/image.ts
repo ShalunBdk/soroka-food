@@ -33,3 +33,20 @@ export const getImageUrl = (imagePath: string | null | undefined): string => {
   // If relative path, add base URL
   return `${API_BASE_URL}${imagePath}`;
 };
+
+/**
+ * Get thumbnail URL from main image path
+ * Converts /uploads/recipe-123.webp to /uploads/recipe-123_thumb.webp
+ * @param imagePath - Main image path
+ * @returns Thumbnail image URL (600px, optimized for recipe cards)
+ */
+export const getThumbnailUrl = (imagePath: string | null | undefined): string => {
+  if (!imagePath) {
+    return '/placeholder-recipe.jpg';
+  }
+
+  // Convert main image path to thumbnail path
+  const thumbnailPath = imagePath.replace('.webp', '_thumb.webp');
+
+  return getImageUrl(thumbnailPath);
+};

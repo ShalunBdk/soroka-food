@@ -25,13 +25,13 @@ export const uploadRecipeImage = async (req: Request, res: Response) => {
     const thumbnailFilename = filename.replace(/\.(jpg|jpeg|png)$/i, '_thumb.webp');
     const thumbnailPath = path.join(path.dirname(originalPath), thumbnailFilename);
 
-    // 1. Convert to WebP (1200px max, quality 85)
+    // 1. Convert to WebP (1200px max, quality 80 for better compression)
     logger.info(`Converting to WebP: ${webpFilename}`);
-    await convertToWebP(originalPath, webpPath, 1200, 85);
+    await convertToWebP(originalPath, webpPath, 1200, 80);
 
-    // 2. Create WebP thumbnail (300px, quality 80)
+    // 2. Create WebP thumbnail (600px for recipe cards, quality 75)
     logger.info(`Creating WebP thumbnail: ${thumbnailFilename}`);
-    await createWebPThumbnail(originalPath, thumbnailPath, 300, 80);
+    await createWebPThumbnail(originalPath, thumbnailPath, 600, 75);
 
     // 3. Delete original uploaded file (no longer needed)
     if (fs.existsSync(originalPath)) {
@@ -91,10 +91,10 @@ export const uploadStepImages = async (req: Request, res: Response) => {
       const thumbnailPath = path.join(path.dirname(originalPath), thumbnailFilename);
 
       // 1. Convert to WebP
-      await convertToWebP(originalPath, webpPath, 1200, 85);
+      await convertToWebP(originalPath, webpPath, 1200, 80);
 
       // 2. Create WebP thumbnail
-      await createWebPThumbnail(originalPath, thumbnailPath, 300, 80);
+      await createWebPThumbnail(originalPath, thumbnailPath, 600, 75);
 
       // 3. Delete original uploaded file
       if (fs.existsSync(originalPath)) {

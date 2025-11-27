@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Recipe } from '../../types/index';
-import { getImageUrl } from '../../utils/image';
+import { getThumbnailUrl } from '../../utils/image';
 import './RecipeCard.css';
 
 interface RecipeCardProps {
@@ -23,7 +23,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, priority = false }) => 
   return (
     <Link to={`/recipe/${recipe.id}`} className="recipe-card">
       <img
-        src={getImageUrl(recipe.image)}
+        src={getThumbnailUrl(recipe.image)}
         alt={recipe.title}
         className="recipe-image"
         loading={priority ? undefined : 'lazy'}
