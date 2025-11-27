@@ -130,8 +130,12 @@ const CategoryPage: React.FC = () => {
               {recipes && recipes.length > 0 && (
                 <>
                   <div className="recipes-grid">
-                    {recipes.map((recipe) => (
-                      <RecipeCard key={recipe.id} recipe={recipe} />
+                    {recipes.map((recipe, index) => (
+                      <RecipeCard
+                        key={recipe.id}
+                        recipe={recipe}
+                        priority={index === 0}
+                      />
                     ))}
                   </div>
 

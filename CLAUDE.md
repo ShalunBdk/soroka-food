@@ -47,7 +47,7 @@ JSON fields in recipes: ingredients (with categories/quantities/units), instruct
 
 ## Structure
 
-**Frontend** (`soroka-food-app/src/`): components (RecipePrintView, ImageModal, Breadcrumbs, Head, StructuredData), pages, pages/admin, hooks (useCategories, useSidebarData), contexts (SettingsContext, ToastContext), services (api.ts), utils (image, sanitize, viewTracker, seo, schema), styles (component-scoped CSS), types
+**Frontend** (`soroka-food-app/src/`): components (RecipeCard with LCP optimization, RecipePrintView, ImageModal, Breadcrumbs, Head, StructuredData), pages, pages/admin, hooks (useCategories, useSidebarData), contexts (SettingsContext, ToastContext), services (api.ts), utils (image, sanitize, viewTracker, seo, schema), styles (component-scoped CSS), types, vite.config.ts (CSS code splitting)
 
 **Backend** (`soroka-food-backend/src/`): controllers (sitemap), routes (sitemap), middleware (auth, errorHandler, upload, rateLimiter, validation, permissions, cache), validators (Zod), utils (jwt, password, imageProcessor, spamFilter, adminLogger, cacheInvalidation), config (database, redis, logger)
 
@@ -197,9 +197,12 @@ JSON fields in recipes: ingredients (with categories/quantities/units), instruct
 - **Controllers**: `controllers/sitemapController.ts`, `routes/sitemapRoutes.ts`
 
 **Performance Optimization**
-- **Preload**: Critical resources (fonts, logo) in index.html
-- **Lazy Loading**: All images except hero (loading="lazy", decoding="async")
-- **Font Display**: font-display: swap for Google Fonts
+- **LCP Optimization**: First image in recipe grids without lazy loading + fetchPriority="high" for faster LCP
+- **Lazy Loading**: All images except first visible (loading="lazy", decoding="async")
+- **Preload**: Critical resources (logo) in index.html, fonts loaded asynchronously
+- **Font Loading**: Async font loading with media="print" onload trick + font-display: swap
+- **CSS Code Splitting**: Vite cssCodeSplit enabled, separate CSS per chunk
+- **Code Splitting**: Separate vendor and editor chunks for better caching
 - **Lang**: lang="ru" in HTML tag for proper indexing
 - **Theme Color**: meta theme-color for mobile browsers
 

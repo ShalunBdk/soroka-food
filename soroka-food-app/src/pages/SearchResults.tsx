@@ -106,8 +106,12 @@ const SearchResults: React.FC = () => {
                 Найдено рецептов: {recipes.length}
               </p>
               <div className="recipes-grid">
-                {recipes.map((recipe) => (
-                  <RecipeCard key={recipe.id} recipe={recipe} />
+                {recipes.map((recipe, index) => (
+                  <RecipeCard
+                    key={recipe.id}
+                    recipe={recipe}
+                    priority={index === 0}
+                  />
                 ))}
               </div>
 

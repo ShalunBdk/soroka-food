@@ -10,6 +10,7 @@ export default defineConfig({
     target: 'es2015', // Browser compatibility target
     minify: 'esbuild', // Use esbuild for fast minification (default)
     sourcemap: false, // Disable sourcemaps in production for security
+    cssCodeSplit: true, // Split CSS into separate files per chunk
 
     // Chunk splitting for better caching
     rollupOptions: {

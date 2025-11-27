@@ -6,6 +6,7 @@ import './RecipeCard.css';
 
 interface RecipeCardProps {
   recipe: Recipe;
+  priority?: boolean; // LCP optimization - set true for first visible image
 }
 
 // Helper function to strip HTML tags and get plain text
@@ -15,7 +16,7 @@ const stripHtml = (html: string): string => {
   return tmp.textContent || tmp.innerText || '';
 };
 
-const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
+const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, priority = false }) => {
   // Strip HTML for card preview
   const plainDescription = stripHtml(recipe.description);
 
@@ -25,8 +26,9 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
         src={getImageUrl(recipe.image)}
         alt={recipe.title}
         className="recipe-image"
-        loading="lazy"
+        loading={priority ? undefined : 'lazy'}
         decoding="async"
+        fetchPriority={priority ? 'high' : undefined}
       />
       <div className="recipe-info">
         <h3 className="recipe-title">{recipe.title}</h3>
