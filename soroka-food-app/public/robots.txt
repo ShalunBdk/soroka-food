@@ -18,8 +18,8 @@ Sitemap: https://soroka-food.shbdk.ru/sitemap.xml
 # Disallow: /*.xml$
 
 # Allow search engines to index images
-User-agent: Googlebot-Image
-Allow: /uploads/
+#User-agent: Googlebot-Image
+#Allow: /uploads/
 
 # Allow all bots to access public uploads
 User-agent: *
