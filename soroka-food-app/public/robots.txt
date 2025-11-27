@@ -11,7 +11,7 @@ Disallow: /unsubscribe/
 # Crawl-delay: 1
 
 # Sitemap location
-Sitemap: https://yourdomain.com/sitemap.xml
+Sitemap: https://soroka-food.shbdk.ru/sitemap.xml
 
 # Block access to specific file types (optional)
 # Disallow: /*.json$

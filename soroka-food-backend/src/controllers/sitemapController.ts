@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma } from '../config/database';
+import prisma from '../config/database';
 import { logger } from '../config/logger';
 
 /**
@@ -30,7 +30,6 @@ export const generateSitemap = async (req: Request, res: Response) => {
 
     // Fetch all static pages
     const staticPages = await prisma.staticPage.findMany({
-      where: { isActive: true },
       select: {
         slug: true,
         updatedAt: true,
@@ -50,7 +49,7 @@ export const generateSitemap = async (req: Request, res: Response) => {
     xml += '  </url>\n';
 
     // Recipes
-    recipes.forEach((recipe) => {
+    recipes.forEach((recipe: { id: number; updatedAt: Date }) => {
       xml += '  <url>\n';
       xml += `    <loc>${baseUrl}/recipe/${recipe.id}</loc>\n`;
       xml += `    <lastmod>${recipe.updatedAt.toISOString()}</lastmod>\n`;
@@ -60,7 +59,7 @@ export const generateSitemap = async (req: Request, res: Response) => {
     });
 
     // Categories
-    categories.forEach((category) => {
+    categories.forEach((category: { slug: string; updatedAt: Date }) => {
       xml += '  <url>\n';
       xml += `    <loc>${baseUrl}/category/${category.slug}</loc>\n`;
       xml += `    <lastmod>${category.updatedAt.toISOString()}</lastmod>\n`;
@@ -88,7 +87,7 @@ export const generateSitemap = async (req: Request, res: Response) => {
     });
 
     // Custom static pages from database
-    staticPages.forEach((page) => {
+    staticPages.forEach((page: { slug: string; updatedAt: Date }) => {
       xml += '  <url>\n';
       xml += `    <loc>${baseUrl}/${page.slug}</loc>\n`;
       xml += `    <lastmod>${page.updatedAt.toISOString()}</lastmod>\n`;

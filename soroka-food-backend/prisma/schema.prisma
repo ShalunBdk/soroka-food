@@ -14,7 +14,7 @@ model User {
   id        Int      @id @default(autoincrement())
   username  String   @unique
   email     String   @unique
-  password  String   // hashed with bcrypt
+  password  String // hashed with bcrypt
   role      Role     @default(MODERATOR)
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -36,10 +36,10 @@ model AdminLog {
   id         Int      @id @default(autoincrement())
   userId     Int
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  action     String   // LOGIN, CREATE, UPDATE, DELETE, APPROVE, REJECT, etc.
-  resource   String   // recipes, users, categories, comments, settings, etc.
-  resourceId Int?     // ID of modified resource (if applicable)
-  details    Json?    // Additional details about the action
+  action     String // LOGIN, CREATE, UPDATE, DELETE, APPROVE, REJECT, etc.
+  resource   String // recipes, users, categories, comments, settings, etc.
+  resourceId Int? // ID of modified resource (if applicable)
+  details    Json? // Additional details about the action
   ipAddress  String?
   userAgent  String?
   createdAt  DateTime @default(now())
@@ -53,14 +53,14 @@ model AdminLog {
 
 // Recipe categories
 model Category {
-  id          Int              @id @default(autoincrement())
-  name        String           @unique
-  slug        String           @unique
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  slug        String   @unique
   description String?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  recipes     RecipeCategory[]
+  recipes RecipeCategory[]
 
   @@map("categories")
 }
@@ -70,9 +70,9 @@ model Recipe {
   id          Int      @id @default(autoincrement())
   title       String
   description String
-  image       String?  // URL to main recipe image
-  prepTime    Int?     // preparation time in minutes (optional)
-  cookingTime Int      // cooking time in minutes
+  image       String? // URL to main recipe image
+  prepTime    Int? // preparation time in minutes (optional)
+  cookingTime Int // cooking time in minutes
   calories    Int
   servings    Int
   author      String   @default("Soroka")
@@ -82,17 +82,17 @@ model Recipe {
   status      Status   @default(DRAFT)
 
   // JSON fields for ingredients, instructions, nutrition, tips
-  ingredients Json     // Array of {name: string, amount: string}
-  instructions Json    // Array of {stepNumber: number, text: string, images?: string[]}
-  nutrition   Json     // {calories: number, protein: number, fat: number, carbs: number}
-  tips        Json     // Array of strings
-  tags        String[] // Array of tag strings
+  ingredients  Json // Array of {name: string, amount: string}
+  instructions Json // Array of {stepNumber: number, text: string, images?: string[]}
+  nutrition    Json // {calories: number, protein: number, fat: number, carbs: number}
+  tips         Json // Array of strings
+  tags         String[] // Array of tag strings
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  categories  RecipeCategory[]
-  comments    Comment[]
+  categories RecipeCategory[]
+  comments   Comment[]
 
   @@index([status])
   @@index([createdAt])
@@ -111,8 +111,8 @@ model RecipeCategory {
   recipeId   Int
   categoryId Int
 
-  recipe     Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  recipe   Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@id([recipeId, categoryId])
   @@index([categoryId])
@@ -125,13 +125,13 @@ model Comment {
   recipeId  Int
   author    String
   email     String?
-  rating    Int           // 1-5 stars
+  rating    Int // 1-5 stars
   text      String
   status    CommentStatus @default(PENDING)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
-  recipe    Recipe        @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
   @@index([recipeId])
   @@index([status])
@@ -147,17 +147,17 @@ enum CommentStatus {
 
 // Newsletter subscribers
 model NewsletterSubscriber {
-  id                 Int                @id @default(autoincrement())
-  email              String             @unique
-  status             SubscriptionStatus @default(PENDING)
-  verified           Boolean            @default(false)
-  verificationToken  String?            @unique
-  verifiedAt         DateTime?
-  unsubscribeToken   String?            @unique
-  subscribedDate     DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  id                Int                @id @default(autoincrement())
+  email             String             @unique
+  status            SubscriptionStatus @default(PENDING)
+  verified          Boolean            @default(false)
+  verificationToken String?            @unique
+  verifiedAt        DateTime?
+  unsubscribeToken  String?            @unique
+  subscribedDate    DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
-  emailLogs          EmailLog[]
+  emailLogs EmailLog[]
 
   @@index([verificationToken])
   @@index([unsubscribeToken])
@@ -172,24 +172,24 @@ enum SubscriptionStatus {
 
 // Site settings (single row)
 model SiteSettings {
-  id              Int      @id @default(1)
-  siteName        String   @default("Soroka Food")
+  id              Int     @id @default(1)
+  siteName        String  @default("Soroka Food")
   siteDescription String?
   logo            String?
   favicon         String?
 
   // Social links
-  youtube         String?
-  instagram       String?
-  telegram        String?
-  tiktok          String?
+  youtube   String?
+  instagram String?
+  telegram  String?
+  tiktok    String?
 
   // SEO
   metaTitle       String?
   metaDescription String?
   metaKeywords    String?
 
-  updatedAt       DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 
   @@map("site_settings")
 }
@@ -208,21 +208,21 @@ model StaticPage {
 
 // Spam filter settings (single row)
 model SpamFilterSettings {
-  id        Int      @id @default(1)
+  id Int @id @default(1)
 
   // Custom spam keywords (in addition to built-in ones)
   customKeywords String[] @default([])
 
   // Filter toggles
-  enableKeywordFilter      Boolean @default(true)
-  enableUrlFilter          Boolean @default(true)
-  enableCapsFilter         Boolean @default(true)
-  enableRepetitiveFilter   Boolean @default(true)
-  enableDuplicateFilter    Boolean @default(true)
+  enableKeywordFilter    Boolean @default(true)
+  enableUrlFilter        Boolean @default(true)
+  enableCapsFilter       Boolean @default(true)
+  enableRepetitiveFilter Boolean @default(true)
+  enableDuplicateFilter  Boolean @default(true)
 
   // Filter thresholds
-  maxUrls                  Int     @default(2)   // Max URLs allowed before marking as spam
-  capsPercentage           Int     @default(80)  // Percentage of caps to trigger filter (80%)
+  maxUrls        Int @default(2) // Max URLs allowed before marking as spam
+  capsPercentage Int @default(80) // Percentage of caps to trigger filter (80%)
 
   updatedAt DateTime @updatedAt
 
@@ -231,34 +231,34 @@ model SpamFilterSettings {
 
 // SMTP settings for email sending (single row, SUPER_ADMIN only)
 model SmtpSettings {
-  id                Int      @id @default(1)
-  host              String   @default("smtp.gmail.com")
-  port              Int      @default(587)
-  secure            Boolean  @default(false) // true for 465, false for other ports
-  user              String   @default("")
-  password          String   @default("") // Encrypted password
-  fromEmail         String   @default("noreply@sorokafood.com")
-  fromName          String   @default("Soroka Food")
-  enabled           Boolean  @default(false)
-  updatedAt         DateTime @updatedAt
+  id        Int      @id @default(1)
+  host      String   @default("smtp.gmail.com")
+  port      Int      @default(587)
+  secure    Boolean  @default(false) // true for 465, false for other ports
+  user      String   @default("")
+  password  String   @default("") // Encrypted password
+  fromEmail String   @default("noreply@sorokafood.com")
+  fromName  String   @default("Soroka Food")
+  enabled   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
 
   @@map("smtp_settings")
 }
 
 // Email templates
 model EmailTemplate {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique // verification, welcome, new-recipe, unsubscribe
-  subject     String
-  bodyHtml    String   @db.Text // HTML version
-  bodyText    String   @db.Text // Plain text fallback
-  variables   String[] @default([]) // Available variables: recipeName, recipeUrl, etc.
-  isDefault   Boolean  @default(false)
-  type        EmailTemplateType
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        Int               @id @default(autoincrement())
+  name      String            @unique // verification, welcome, new-recipe, unsubscribe
+  subject   String
+  bodyHtml  String            @db.Text // HTML version
+  bodyText  String            @db.Text // Plain text fallback
+  variables String[]          @default([]) // Available variables: recipeName, recipeUrl, etc.
+  isDefault Boolean           @default(false)
+  type      EmailTemplateType
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 
-  emailLogs   EmailLog[]
+  emailLogs EmailLog[]
 
   @@map("email_templates")
 }
@@ -272,18 +272,18 @@ enum EmailTemplateType {
 
 // Email sending logs
 model EmailLog {
-  id                     Int                   @id @default(autoincrement())
-  subscriberId           Int
-  templateId             Int?
-  subject                String
-  recipient              String
-  status                 EmailStatus           @default(PENDING)
-  error                  String?               @db.Text
-  sentAt                 DateTime?
-  createdAt              DateTime              @default(now())
+  id           Int         @id @default(autoincrement())
+  subscriberId Int
+  templateId   Int?
+  subject      String
+  recipient    String
+  status       EmailStatus @default(PENDING)
+  error        String?     @db.Text
+  sentAt       DateTime?
+  createdAt    DateTime    @default(now())
 
-  subscriber             NewsletterSubscriber  @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
-  template               EmailTemplate?        @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  subscriber NewsletterSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  template   EmailTemplate?       @relation(fields: [templateId], references: [id], onDelete: SetNull)
 
   @@index([subscriberId])
   @@index([status])
