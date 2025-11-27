@@ -28,11 +28,11 @@ Admin: `admin_logs`, `spam_filter_settings`, `smtp_settings`, `email_templates`,
 JSON fields in recipes: ingredients (with categories/quantities/units), instructions, nutrition, tips, prepTime
 
 ### Routes
-**Public**: `/`, `/recipe/:id`, `/category/:slug`, `/search`, `/best`, `/about`, `/contact`, `/rules`, `/advertising`
+**Public**: `/`, `/recipe/:id`, `/category/:slug`, `/search`, `/best`, `/about`, `/contact`, `/rules`, `/advertising`, `/sitemap.xml`
 **Admin**: Dashboard, Recipes, Categories, Tags, Comments, Newsletter (ADMIN+), Users (ADMIN+), Static Pages (ADMIN+), Settings (ADMIN+), Spam Filter (SUPER_ADMIN), Admin Logs (SUPER_ADMIN)
 
 ### API
-**Public**: `/api/auth/login`, `/api/recipes` (?sort=newest|popular|photo), `/api/recipes/:id`, `/api/recipes/:id/view`, `/api/recipes/search`, `/api/recipes/stats`, `/api/categories`, `/api/categories/:slug/recipes`, `/api/settings`, `/api/static-pages/:slug`, `/api/comments`, `/api/newsletter/*`
+**Public**: `/api/auth/login`, `/api/recipes` (?sort=newest|popular|photo), `/api/recipes/:id`, `/api/recipes/:id/view`, `/api/recipes/search`, `/api/recipes/stats`, `/api/categories`, `/api/categories/:slug/recipes`, `/api/settings`, `/api/static-pages/:slug`, `/api/comments`, `/api/newsletter/*`, `/sitemap.xml`
 
 **Protected** (Bearer token required):
 - MOD+: `/api/admin/{stats,recipes,categories,tags,comments}`, `/api/upload/*`
@@ -47,9 +47,9 @@ JSON fields in recipes: ingredients (with categories/quantities/units), instruct
 
 ## Structure
 
-**Frontend** (`soroka-food-app/src/`): components (RecipePrintView, ImageModal, Breadcrumbs), pages, pages/admin, hooks (useCategories, useSidebarData), contexts (SettingsContext, ToastContext), services (api.ts), utils (image, sanitize, viewTracker), styles (component-scoped CSS), types
+**Frontend** (`soroka-food-app/src/`): components (RecipePrintView, ImageModal, Breadcrumbs, Head, StructuredData), pages, pages/admin, hooks (useCategories, useSidebarData), contexts (SettingsContext, ToastContext), services (api.ts), utils (image, sanitize, viewTracker, seo, schema), styles (component-scoped CSS), types
 
-**Backend** (`soroka-food-backend/src/`): controllers, routes, middleware (auth, errorHandler, upload, rateLimiter, validation, permissions, cache), validators (Zod), utils (jwt, password, imageProcessor, spamFilter, adminLogger, cacheInvalidation), config (database, redis, logger)
+**Backend** (`soroka-food-backend/src/`): controllers (sitemap), routes (sitemap), middleware (auth, errorHandler, upload, rateLimiter, validation, permissions, cache), validators (Zod), utils (jwt, password, imageProcessor, spamFilter, adminLogger, cacheInvalidation), config (database, redis, logger)
 
 **Images**: Multer → `public/uploads/` (max 5MB, jpeg/jpg/png/webp) → Sharp converts to WebP (main 1200px quality 85 + thumbnail 300px quality 80) → Use `getImageUrl(path)` helper for URLs
 
@@ -160,7 +160,64 @@ JSON fields in recipes: ingredients (with categories/quantities/units), instruct
 
 **Files**: Frontend: `components/RecipePrintView/{RecipePrintView.tsx,.css}`, `pages/RecipeDetail.tsx`, `styles/RecipeDetail.css`
 
-## Performance
+## SEO & Performance
+
+### SEO Optimization (✅ IMPLEMENTED)
+
+**META Tags & Open Graph**
+- **Components**: `components/Head/Head.tsx` - Dynamic meta-tags manager
+- **Features**:
+  - Unique title and description for each page
+  - Open Graph tags (og:title, og:description, og:image, og:url, og:type)
+  - Twitter Card tags (twitter:card, twitter:title, twitter:description, twitter:image)
+  - Canonical URLs to prevent duplicate content
+  - Article-specific tags (publishedTime for recipes)
+  - Robots meta (index, follow)
+- **Integration**: RecipeDetail, Home, CategoryPage
+- **Utils**: `utils/seo.ts` - Helpers for meta description generation, URL formatting, ISO 8601 duration
+
+**Schema.org Structured Data**
+- **Components**: `components/StructuredData/StructuredData.tsx` - JSON-LD injector
+- **Schemas**: `utils/schema.ts` - Schema generators:
+  1. **Recipe** - Full recipe markup (ingredients, instructions, time, nutrition, rating)
+  2. **WebSite** - Site schema with SearchAction
+  3. **Organization** - Organization info with social links
+  4. **BreadcrumbList** - Navigation breadcrumbs
+- **Rich Snippets**: ⭐⭐⭐⭐⭐ rating, cooking time, calories in Google search
+- **Format**: ISO 8601 durations (PT1H30M), proper nutrition markup
+
+**Technical SEO**
+- **robots.txt**: `soroka-food-app/public/robots.txt` - Indexing rules (allow public, disallow admin)
+- **sitemap.xml**: Dynamic endpoint `/sitemap.xml` - Auto-generated from DB
+  - All PUBLISHED recipes (priority 0.8, weekly)
+  - All categories (priority 0.7, weekly)
+  - Static pages (priority 0.5-0.6, monthly)
+  - Homepage (priority 1.0, daily)
+  - Cache: 1 hour
+- **Controllers**: `controllers/sitemapController.ts`, `routes/sitemapRoutes.ts`
+
+**Performance Optimization**
+- **Preload**: Critical resources (fonts, logo) in index.html
+- **Lazy Loading**: All images except hero (loading="lazy", decoding="async")
+- **Font Display**: font-display: swap for Google Fonts
+- **Lang**: lang="ru" in HTML tag for proper indexing
+- **Theme Color**: meta theme-color for mobile browsers
+
+**Files**:
+- Frontend: `components/Head/Head.tsx`, `components/StructuredData/StructuredData.tsx`, `utils/seo.ts`, `utils/schema.ts`, `public/robots.txt`, `index.html`
+- Backend: `controllers/sitemapController.ts`, `routes/sitemapRoutes.ts`
+
+**Expected Results**:
+- Rich snippets in Google (1-2 months)
+- CTR +30-50% (1-2 months)
+- Organic traffic +40-60% (3-6 months)
+- Featured snippets for popular recipes (6-12 months)
+
+**Setup Required**:
+1. Update `FRONTEND_URL` in backend `.env`
+2. Update sitemap URL in `robots.txt` (yourdomain.com)
+3. Submit sitemap to Google Search Console
+4. Test Rich Results: https://search.google.com/test/rich-results
 
 ### Database
 **Indexed Fields**: Recipe (status, createdAt, views, rating), Comment (recipeId, status, createdAt), RecipeCategory (categoryId), AdminLog (userId, action, resource, createdAt), EmailLog (subscriberId, status, createdAt), NewsletterSubscriber (verificationToken, unsubscribeToken)

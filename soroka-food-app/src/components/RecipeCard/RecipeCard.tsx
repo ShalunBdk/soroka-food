@@ -21,7 +21,13 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
 
   return (
     <Link to={`/recipe/${recipe.id}`} className="recipe-card">
-      <img src={getImageUrl(recipe.image)} alt={recipe.title} className="recipe-image" />
+      <img
+        src={getImageUrl(recipe.image)}
+        alt={recipe.title}
+        className="recipe-image"
+        loading="lazy"
+        decoding="async"
+      />
       <div className="recipe-info">
         <h3 className="recipe-title">{recipe.title}</h3>
         <p className="recipe-description">{plainDescription}</p>

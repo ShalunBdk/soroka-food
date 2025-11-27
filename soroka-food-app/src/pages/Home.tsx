@@ -6,8 +6,12 @@ import Pagination from '../components/Pagination/Pagination';
 import Newsletter from '../components/Newsletter/Newsletter';
 import SocialLinks from '../components/SocialLinks/SocialLinks';
 import SiteStats from '../components/SiteStats/SiteStats';
+import Head from '../components/Head/Head';
+import StructuredData from '../components/StructuredData/StructuredData';
 import { useSidebarData } from '../hooks/useSidebarData';
 import { useSettings } from '../contexts/SettingsContext';
+import { getCanonicalUrl } from '../utils/seo';
+import { generateWebSiteSchema, generateOrganizationSchema, generateBreadcrumbSchema } from '../utils/schema';
 import api from '../services/api';
 import type { Recipe } from '../types/index';
 import '../styles/Home.css';
@@ -66,8 +70,37 @@ const Home: React.FC = () => {
     fetchRecipes();
   }, [currentPage, activeTab]);
 
+  // SEO data
+  const siteUrl = window.location.origin;
+  const siteName = settings?.siteName || 'Soroka Food';
+  const siteDescription = settings?.siteDescription ||
+    'Удобный поиск рецептов по продуктам, калориям, времени, типу блюда. Свои кулинарные изыскания, пошаговые инструкции, фото готовых блюд.';
+  const canonicalUrl = getCanonicalUrl('/', siteUrl);
+
+  // Generate structured data
+  const websiteSchema = generateWebSiteSchema(siteName, siteUrl, siteDescription);
+  const organizationSchema = generateOrganizationSchema(
+    siteName,
+    siteUrl,
+    settings?.logo || '/logo_1.png',
+    settings?.socialLinks
+  );
+  const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems, siteUrl);
+
   return (
     <>
+      {/* SEO Meta Tags */}
+      <Head
+        title={`${siteName} - Домашние рецепты приготовления блюд`}
+        description={siteDescription}
+        url={canonicalUrl}
+        type="website"
+        keywords="рецепты, домашние рецепты, кулинария, готовка, блюда, еда"
+      />
+      <StructuredData data={websiteSchema} />
+      <StructuredData data={organizationSchema} />
+      <StructuredData data={breadcrumbSchema} />
+
       <Breadcrumbs items={breadcrumbItems} />
 
       <div className="main-container">

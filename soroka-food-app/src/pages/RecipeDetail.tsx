@@ -4,12 +4,16 @@ import QRCode from 'react-qr-code';
 import Breadcrumbs from '../components/Breadcrumbs/Breadcrumbs';
 import ImageModal from '../components/ImageModal/ImageModal';
 import RecipePrintView from '../components/RecipePrintView/RecipePrintView';
+import Head from '../components/Head/Head';
+import StructuredData from '../components/StructuredData/StructuredData';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { getImageUrl } from '../utils/image';
 import { shouldCountView } from '../utils/viewTracker';
 import { formatTime } from '../utils/time';
 import { useSettings } from '../contexts/SettingsContext';
+import { generateRecipeMetaDescription, getFullImageUrl, getCanonicalUrl } from '../utils/seo';
+import { generateRecipeSchema, generateBreadcrumbSchema } from '../utils/schema';
 import type { RecipeDetail as RecipeDetailType, Comment } from '../types';
 import '../styles/RecipeDetail.css';
 
@@ -90,21 +94,6 @@ const RecipeDetail: React.FC = () => {
     }
   };
 
-  // Update document title when recipe is loaded
-  useEffect(() => {
-    const originalTitle = document.title;
-
-    if (recipe?.title && settings) {
-      const siteName = settings.siteName || 'Soroka Food';
-      document.title = `${recipe.title} - ${siteName}`;
-    }
-
-    // Restore original title when component unmounts
-    return () => {
-      document.title = originalTitle;
-    };
-  }, [recipe, settings]);
-
   // Track view count (only once per 24 hours per user)
   useEffect(() => {
     if (recipe && shouldCountView(recipeId)) {
@@ -128,6 +117,27 @@ const RecipeDetail: React.FC = () => {
     { label: 'Рецепты', url: '/' },
     { label: recipe.title }
   ];
+
+  // Prepare SEO data
+  const siteUrl = window.location.origin;
+  const siteName = settings?.siteName || 'Soroka Food';
+
+  const metaDescription = recipe
+    ? generateRecipeMetaDescription(recipe.description, recipe.cookingTime, recipe.servings)
+    : '';
+
+  const fullImageUrl = recipe?.image
+    ? getFullImageUrl(getImageUrl(recipe.image), siteUrl)
+    : undefined;
+
+  const canonicalUrl = getCanonicalUrl(`/recipe/${recipeId}`, siteUrl);
+
+  // Generate structured data
+  const recipeSchema = recipe
+    ? generateRecipeSchema(recipe, siteUrl, siteName)
+    : null;
+
+  const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems, siteUrl);
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -265,6 +275,24 @@ const RecipeDetail: React.FC = () => {
 
   return (
     <>
+      {/* SEO Meta Tags */}
+      {recipe && (
+        <>
+          <Head
+            title={`${recipe.title} - ${siteName}`}
+            description={metaDescription}
+            image={fullImageUrl}
+            url={canonicalUrl}
+            type="article"
+            keywords={recipe.tags.join(', ')}
+            author={siteName}
+            publishedTime={recipe.date}
+          />
+          {recipeSchema && <StructuredData data={recipeSchema} />}
+          <StructuredData data={breadcrumbSchema} />
+        </>
+      )}
+
       <Breadcrumbs items={breadcrumbItems} />
 
       <div className="main-container">
@@ -298,6 +326,8 @@ const RecipeDetail: React.FC = () => {
             className="recipe-image"
             onClick={() => handleImageClick(getImageUrl(recipe.image), recipe.title)}
             style={{ cursor: 'pointer' }}
+            loading="eager"
+            decoding="async"
           />
 
           <div className="recipe-description" dangerouslySetInnerHTML={{ __html: recipe.description }} />
@@ -444,6 +474,8 @@ const RecipeDetail: React.FC = () => {
                         alt={`Шаг ${step.stepNumber} - Изображение ${idx + 1}`}
                         className="step-image"
                         onClick={() => handleImageClick(getImageUrl(img), `Шаг ${step.stepNumber} - Изображение ${idx + 1}`)}
+                        loading="lazy"
+                        decoding="async"
                       />
                     ))}
                   </div>
@@ -584,7 +616,13 @@ const RecipeDetail: React.FC = () => {
             <h3 className="right-sidebar-title">Популярные рецепты</h3>
             {relatedRecipes.slice(5, 9).map((relatedRecipe) => (
               <Link key={relatedRecipe.id} to={`/recipe/${relatedRecipe.id}`} className="related-recipe">
-                <img src={getImageUrl(relatedRecipe.image)} alt={relatedRecipe.title} className="related-image" />
+                <img
+                  src={getImageUrl(relatedRecipe.image)}
+                  alt={relatedRecipe.title}
+                  className="related-image"
+                  loading="lazy"
+                  decoding="async"
+                />
                 <div className="related-info">
                   <div className="related-title">{relatedRecipe.title}</div>
                   <div className="related-meta">

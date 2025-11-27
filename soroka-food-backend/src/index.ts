@@ -101,6 +101,7 @@ import adminLogRoutes from './routes/adminLogRoutes';
 import smtpRoutes from './routes/smtpRoutes';
 import emailTemplateRoutes from './routes/emailTemplateRoutes';
 import emailLogRoutes from './routes/emailLogRoutes';
+import sitemapRoutes from './routes/sitemapRoutes';
 
 // Public routes
 app.use('/api/auth', authRoutes);
@@ -110,6 +111,9 @@ app.use('/api/comments', commentRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/static-pages', staticPageRoutes);
+
+// SEO routes
+app.use('/', sitemapRoutes);
 
 // Protected admin routes
 app.use('/api/admin', adminRoutes);

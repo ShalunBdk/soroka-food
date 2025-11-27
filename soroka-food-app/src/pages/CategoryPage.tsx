@@ -7,8 +7,12 @@ import Pagination from '../components/Pagination/Pagination';
 import Newsletter from '../components/Newsletter/Newsletter';
 import SocialLinks from '../components/SocialLinks/SocialLinks';
 import SiteStats from '../components/SiteStats/SiteStats';
+import Head from '../components/Head/Head';
+import StructuredData from '../components/StructuredData/StructuredData';
 import { useSidebarData } from '../hooks/useSidebarData';
 import { useSettings } from '../contexts/SettingsContext';
+import { getCanonicalUrl } from '../utils/seo';
+import { generateBreadcrumbSchema } from '../utils/schema';
 import api from '../services/api';
 import type { Recipe } from '../types/index';
 import '../styles/CategoryPage.css';
@@ -73,8 +77,31 @@ const CategoryPage: React.FC = () => {
     fetchRecipes();
   }, [slug, currentPage]);
 
+  // SEO data
+  const siteUrl = window.location.origin;
+  const siteName = settings?.siteName || 'Soroka Food';
+  const categoryTitle = category ? `${category.name} - ${siteName}` : siteName;
+  const categoryDescription = category?.description ||
+    `Рецепты в категории ${category?.name || ''}. Пошаговые инструкции с фото.`;
+  const canonicalUrl = getCanonicalUrl(`/category/${slug}`, siteUrl);
+  const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems, siteUrl);
+
   return (
     <>
+      {/* SEO Meta Tags */}
+      {category && (
+        <>
+          <Head
+            title={categoryTitle}
+            description={categoryDescription}
+            url={canonicalUrl}
+            type="website"
+            keywords={`${category.name}, рецепты, кулинария, готовка`}
+          />
+          <StructuredData data={breadcrumbSchema} />
+        </>
+      )}
+
       <Breadcrumbs items={breadcrumbItems} />
 
       <div className="main-container">
